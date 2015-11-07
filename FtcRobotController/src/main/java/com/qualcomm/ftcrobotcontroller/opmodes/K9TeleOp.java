@@ -108,11 +108,11 @@ public class K9TeleOp extends OpMode {
 		motorLeft.setDirection(DcMotor.Direction.REVERSE);
 		
 		//arm = hardwareMap.servo.get("servo_1");
-		//claw = hardwareMap.servo.get("servo_6");
+		//claw = hardwareMap.servo.get("servo_2");
 
 		// assign the starting position of the wrist and claw
-		armPosition = 0.2;
-		clawPosition = 0.2;
+		//armPosition = 0.2;
+		//clawPosition = 0.2;
 	}
 
 	/*
