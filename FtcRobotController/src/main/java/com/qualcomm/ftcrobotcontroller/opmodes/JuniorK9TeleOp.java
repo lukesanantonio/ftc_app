@@ -57,6 +57,7 @@ public class JuniorK9TeleOp extends OpMode {
 		 */
         motorRight = hardwareMap.dcMotor.get("motor_2");
         motorLeft = hardwareMap.dcMotor.get("motor_1");
+        motorLeft.setDirection(DcMotor.Direction.REVERSE);
 
         liftServo = hardwareMap.servo.get("lift");
         liftServoState = LiftServoState.Middle;
