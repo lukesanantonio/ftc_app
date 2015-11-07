@@ -114,6 +114,10 @@ public class JuniorK9TeleOp extends OpMode {
                 telemetry.addData("Servo state", "Up");
                 break;
         }
+
+        telemetry.addData("Gamepad 1", gamepad1.toString());
+        telemetry.addData("Motor left", motorLeft.toString());
+        telemetry.addData("Motor right", motorRight.toString());
     }
 
     /*
