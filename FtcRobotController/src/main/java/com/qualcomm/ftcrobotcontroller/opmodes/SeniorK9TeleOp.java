@@ -10,8 +10,10 @@ package com.qualcomm.ftcrobotcontroller.opmodes;
  */
 public class SeniorK9TeleOp extends OpMode {
 
-    DcMotor motorRight;
-    DcMotor motorLeft;
+    DcMotor motorFrontRight;
+    DcMotor motorFrontLeft;
+    DcMotor motorBackRight;
+    DcMotor motorBackLeft;
 
     Servo claw;
     /*
@@ -39,8 +41,10 @@ public class SeniorK9TeleOp extends OpMode {
 		 *    "servo_1" controls the arm joint of the manipulator.
 		 *    "servo_6" controls the claw joint of the manipulator.
 		 */
-        motorRight = hardwareMap.dcMotor.get("motor_2");
-        motorLeft = hardwareMap.dcMotor.get("motor_1");
+        motorFrontRight = hardwareMap.dcMotor.get("front right");
+        motorFrontLeft  = hardwareMap.dcMotor.get("front left");
+        motorBackRight = hardwareMap.dcMotor.get("back right");
+        motorBackLeft  = hardwareMap.dcMotor.get("back left");
 
 
     }
@@ -79,8 +83,10 @@ public class SeniorK9TeleOp extends OpMode {
         left =  (float)scaleInput(left);
 
         // write the values to the motors
-        motorRight.setPower(right);
-        motorLeft.setPower(left);
+        motorFrontRight.setPower(right);
+        motorBackRight.setPower(right);
+        motorFrontLeft.setPower(left);
+        motorBackLeft.setPower(left);
     }
 
     /*
