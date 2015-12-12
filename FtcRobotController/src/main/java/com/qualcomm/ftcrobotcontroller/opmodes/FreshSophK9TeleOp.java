@@ -69,33 +69,21 @@ public class FreshSophK9TeleOp extends OpMode {
 		 * wrist/claw via the a,b, x, y buttons
 		 */
 
-        float right = Range.clip(gamepad1.left_stick_y, -1, 1);
-        float left = Range.clip(gamepad1.right_stick_y, -1, 1);
+        float right = (float) scaleInput(Range.clip(gamepad1.left_stick_y, -1, 1));
+        float left = (float) scaleInput(Range.clip(gamepad1.right_stick_y, -1, 1));
 
-        // scale the joystick value to make it easier to control
-        // the robot more precisely at slower speeds.
-        right = (float) scaleInput(right);
-        left =  (float) scaleInput(left);
+        float armAnglePow = (float) scaleInput(Range.clip(gamepad2.left_stick_y, -1, 1));
+        float armExtendPow = (float) scaleInput(Range.clip(gamepad2.right_stick_y, -1, 1));
 
-        // write the values to the motors
-        if(gamepad1.right_bumper) {
-            armAngle.setPower(left);
-            armExtend.setPower(right);
+        treadLeft.setPower(left);
+        treadRight.setPower(right);
+        armAngle.setPower(armAnglePow);
+        armExtend.setPower(armExtendPow);
 
-            treadLeft.setPower(0.0);
-            treadRight.setPower(0.0);
-        }
-        else
-        {
-            treadLeft.setPower(left);
-            treadRight.setPower(right);
-
-            armAngle.setPower(0.0);
-            armExtend.setPower(0.0);
-        }
-
-        telemetry.addData("Motor left", left);
-        telemetry.addData("Motor right", right);
+        telemetry.addData("left", left);
+        telemetry.addData("right", right);
+        telemetry.addData("arm angle", armAnglePow);
+        telemetry.addData("arm extend", armExtendPow);
 
     }
 
