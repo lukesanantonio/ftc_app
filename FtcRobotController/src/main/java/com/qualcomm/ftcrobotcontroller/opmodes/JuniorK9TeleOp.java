@@ -21,15 +21,11 @@ enum LiftServoState
 
 public class JuniorK9TeleOp extends OpMode {
 
-    DcMotor motorRight;
-    DcMotor motorLeft;
-
-    Servo liftServo;
-    LiftServoState liftServoState;
-
-    final static float LIFT_SERVO_UP = 0.0f;
-    final static float LIFT_SERVO_MIDDLE = .5f;
-    final static float LIFT_SERVO_DOWN = 1.0f;
+    DcMotor motorRightTread;
+    DcMotor motorLeftTread;
+    DcMotor motorRightWheel;
+    DcMotor motorLeftWheel;
+    DcMotor armMotor;
     /*
      * Code to run when the op mode is first enabled goes here
      *
@@ -55,12 +51,15 @@ public class JuniorK9TeleOp extends OpMode {
 		 *    "servo_1" controls the arm joint of the manipulator.
 		 *    "servo_6" controls the claw joint of the manipulator.
 		 */
-        motorRight = hardwareMap.dcMotor.get("motor_2");
-        motorLeft = hardwareMap.dcMotor.get("motor_1");
-        motorLeft.setDirection(DcMotor.Direction.REVERSE);
+        motorRightTread = hardwareMap.dcMotor.get("right tread");
+        motorLeftTread = hardwareMap.dcMotor.get("left tread");
+        motorLeftTread.setDirection(DcMotor.Direction.REVERSE);
 
-        liftServo = hardwareMap.servo.get("lift");
-        liftServoState = LiftServoState.Middle;
+        motorRightWheel = hardwareMap.dcMotor.get("right wheel");
+        motorRightWheel.setDirection(DcMotor.Direction.REVERSE);
+        motorLeftWheel = hardwareMap.dcMotor.get("left wheel");
+
+        armMotor = hardwareMap.dcMotor.get("arm");
     }
 
     /*
@@ -87,37 +86,20 @@ public class JuniorK9TeleOp extends OpMode {
         left =  (float) scaleInput(left);
 
         // write the values to the motors
-        motorRight.setPower(right);
-        motorLeft.setPower(left);
+        motorRightWheel.setPower(right);
+        motorRightTread.setPower(right);
 
-        if(gamepad1.a) {
-            liftServoState = LiftServoState.Down;
-        }
-        else if(gamepad1.b) {
-            liftServoState = LiftServoState.Middle;
-        }
-        else if(gamepad1.y) {
-            liftServoState = LiftServoState.Up;
-        }
-        switch(liftServoState)
-        {
-            case Down:
-                liftServo.setPosition(LIFT_SERVO_DOWN);
-                telemetry.addData("Servo state", "Down");
-                break;
-            case Middle:
-                liftServo.setPosition(LIFT_SERVO_MIDDLE);
-                telemetry.addData("Servo state", "Middle");
-                break;
-            case Up:
-                liftServo.setPosition(LIFT_SERVO_UP);
-                telemetry.addData("Servo state", "Up");
-                break;
-        }
+        motorLeftWheel.setPower(left);
+        motorLeftTread.setPower(left);
 
-        telemetry.addData("Gamepad 1", gamepad1.toString());
-        telemetry.addData("Motor left", motorLeft.toString());
-        telemetry.addData("Motor right", motorRight.toString());
+        float arm = Range.clip(gamepad2.left_stick_y, -1, 1);
+        arm = (float) scaleInput(arm);
+        armMotor.setPower(arm);
+
+        telemetry.addData("Motor left", left);
+        telemetry.addData("Motor right", right);
+        telemetry.addData("Motor arm", arm);
+
     }
 
     /*
