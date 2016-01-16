@@ -15,19 +15,15 @@ import com.qualcomm.robotcore.util.Range;
  * Enables control of the robot via the gamepad
  */
 
-public class FreshSophK9TeleOp extends OpMode {
+public class FreshSophAutoBlueRight extends OpMode {
 
     DcMotor treadLeft;
     DcMotor treadRight;
     DcMotor armAngle;
     DcMotor armExtend;
 
-    double climberHighPos = 0.0;
-    double climberLowPos = 0.0;
-
     Servo climberHigh;
     Servo climberLow;
-
     /*
      * Code to run when the op mode is first enabled goes here
      *
@@ -55,13 +51,16 @@ public class FreshSophK9TeleOp extends OpMode {
 		 */
         treadLeft = hardwareMap.dcMotor.get("right");
         treadRight = hardwareMap.dcMotor.get("left");
-        treadLeft.setDirection(DcMotor.Direction.REVERSE);
+        treadRight.setDirection(DcMotor.Direction.REVERSE);
 
         armAngle = hardwareMap.dcMotor.get("arm angle");
         armExtend = hardwareMap.dcMotor.get("arm extend");
 
         climberHigh = hardwareMap.servo.get("climber high");
         climberLow = hardwareMap.servo.get("climber low");
+
+        climberHigh.setPosition(1.0);
+        climberLow.setPosition(1.0);
     }
 
     /*
@@ -72,38 +71,46 @@ public class FreshSophK9TeleOp extends OpMode {
     @Override
     public void loop() {
 
-		/*
-		 * Gamepad 1
-		 *
-		 * Gamepad 1 controls the motors via the left stick, and it controls the
-		 * wrist/claw via the a,b, x, y buttons
-		 */
+        float left = 0;
+        float right = 0;
+        if(time < 1.0)
+        {
+            left = 1.0f;
+            right = 1.0f;
+        }
+        else if(time < 3.0)
+        {
+            left = -1.0f;
+            right = 1.0f;
+        }
+        else if(time < 4.0)
+        {
+            left = 1.0f;
+            right = 1.0f;
+        }
+        else if(time < 5.0)
+        {
+            left = -1.0f;
+            right = 1.0f;
+        }
+        else if(time < 5.5)
+        {
+            left = 1.0f;
+            right = 1.0f;
+        }
 
-        float right = (float) scaleInput(Range.clip(gamepad1.left_stick_y, -1, 1));
-        float left = (float) scaleInput(Range.clip(gamepad1.right_stick_y, -1, 1));
-
-        float armAnglePow = (float) scaleInput(Range.clip(gamepad2.left_stick_y, -1, 1));
-        float armExtendPow = (float) scaleInput(Range.clip(gamepad2.right_stick_y, -1, 1));
+		float armAnglePow = 0.0f;
+        float armExtendPow = 0.0f;
 
         treadLeft.setPower(left);
         treadRight.setPower(right);
         armAngle.setPower(armAnglePow);
         armExtend.setPower(armExtendPow);
 
-        if(gamepad1.dpad_up) climberHighPos += .1;
-        if(gamepad1.dpad_down) climberHighPos -= .1;
-        if(gamepad1.dpad_right) climberLowPos += .1;
-        if(gamepad1.dpad_left) climberLowPos -= .1;
-
-        climberHigh.setPosition(Range.clip(climberHighPos, 0.0, 1.0));
-        climberLow.setPosition(Range.clip(climberLowPos, 0.0, 1.0));
-
         telemetry.addData("left", left);
         telemetry.addData("right", right);
         telemetry.addData("arm angle", armAnglePow);
         telemetry.addData("arm extend", armExtendPow);
-        telemetry.addData("climber high", climberHighPos);
-        telemetry.addData("climber low", climberLowPos);
 
     }
 
@@ -124,8 +131,8 @@ public class FreshSophK9TeleOp extends OpMode {
      * the robot more precisely at slower speeds.
      */
     double scaleInput(double dVal)  {
-        double[] scaleArray = { 0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.15, 0.20,
-                0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.60, 0.70, 1.00 };
+        double[] scaleArray = { 0.0, 0.05, 0.09, 0.10, 0.12, 0.15, 0.18, 0.24,
+                0.30, 0.36, 0.43, 0.50, 0.60, 0.72, 0.85, 1.00, 1.00 };
 
         // get the corresponding index for the scaleInput array.
         int index = (int) (dVal * 16.0);

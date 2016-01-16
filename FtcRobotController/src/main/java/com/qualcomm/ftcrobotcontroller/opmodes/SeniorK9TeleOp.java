@@ -14,8 +14,19 @@ public class SeniorK9TeleOp extends OpMode {
     DcMotor motorFrontLeft;
     DcMotor motorBackRight;
     DcMotor motorBackLeft;
+    DcMotor motorLift;
+    DcMotor motorHook;
 
-    Servo claw;
+    //Servo claw; ???
+    Servo red;
+    Servo blue;
+
+    final double RESET_RED_SERVO = 0.0;
+    final double ACTIVATE_RED_SERVO = 1.0;
+
+    final double RESET_BLUE_SERVO = 0.0;
+    final double ACTIVATE_BLUE_SERVO = 1.0;
+
     /*
      * Code to run when the op mode is first enabled goes here
      *
@@ -30,23 +41,15 @@ public class SeniorK9TeleOp extends OpMode {
 		 * that the names of the devices must match the names used when you
 		 * configured your robot and created the configuration file.
 		 */
-
-		/*
-		 * For the demo Tetrix K9 bot we assume the following,
-		 *   There are two motors "motor_1" and "motor_2"
-		 *   "motor_1" is on the right side of the bot.
-		 *   "motor_2" is on the left side of the bot and reversed.
-		 *
-		 * We also assume that there are two servos "servo_1" and "servo_6"
-		 *    "servo_1" controls the arm joint of the manipulator.
-		 *    "servo_6" controls the claw joint of the manipulator.
-		 */
         motorFrontRight = hardwareMap.dcMotor.get("front right");
         motorFrontLeft  = hardwareMap.dcMotor.get("front left");
-        motorBackRight = hardwareMap.dcMotor.get("back right");
-        motorBackLeft  = hardwareMap.dcMotor.get("back left");
+        motorBackRight  = hardwareMap.dcMotor.get("back right");
+        motorBackLeft   = hardwareMap.dcMotor.get("back left");
+        motorLift       = hardwareMap.dcMotor.get("scissor lift");
+        motorHook       = hardwareMap.dcMotor.get("hook");
 
-
+        red  = hardwareMap.servo.get("red");
+        blue = hardwareMap.servo.get("blue");
     }
 
     /*
@@ -57,36 +60,57 @@ public class SeniorK9TeleOp extends OpMode {
     @Override
     public void loop() {
 
-		/*
-		 * Gamepad 1
-		 *
-		 * Gamepad 1 controls the motors via the left stick, and it controls the
-		 * wrist/claw via the a,b, x, y buttons
-		 */
+        if(gamepad1.y)
+        {
+            red.setPosition(RESET_RED_SERVO);
+            blue.setPosition(RESET_BLUE_SERVO);
+        }
+        else if(gamepad1.x)
+        {
+            red.setPosition(RESET_RED_SERVO);
+            blue.setPosition(ACTIVATE_BLUE_SERVO);
+        }
+        else if(gamepad1.b)
+        {
+            red.setPosition(ACTIVATE_RED_SERVO);
+            blue.setPosition(RESET_BLUE_SERVO);
+        }
+        else if(gamepad1.a)
+        {
+            red.setPosition(ACTIVATE_RED_SERVO);
+            blue.setPosition(ACTIVATE_BLUE_SERVO);
+        }
 
-        // throttle: left_stick_y ranges from -1 to 1, where -1 is full up, and
-        // 1 is full down
-        // direction: left_stick_x ranges from -1 to 1, where -1 is full left
-        // and 1 is full right
-        float throttle = -gamepad1.left_stick_y;
-        float direction = gamepad1.left_stick_x;
-        float right = throttle - direction;
-        float left = throttle + direction;
+        float left  = -gamepad1.left_stick_y;
+        float right = gamepad1.right_stick_y;
+        float lift  = gamepad2.left_stick_y;
+        float hook  = gamepad2.right_stick_y;
 
         // clip the right/left values so that the values never exceed +/- 1
         right = Range.clip(right, -1, 1);
-        left = Range.clip(left, -1, 1);
+        left  = Range.clip(left,  -1, 1);
+        lift  = Range.clip(lift,  -1, 1);
+        hook  = Range.clip(hook,  -1, 1);
 
         // scale the joystick value to make it easier to control
         // the robot more precisely at slower speeds.
         right = (float)scaleInput(right);
-        left =  (float)scaleInput(left);
+        left  = (float)scaleInput(left);
+        lift  = (float)scaleInput(lift);
+        hook  = (float)scaleInput(hook);
 
         // write the values to the motors
         motorFrontRight.setPower(right);
         motorBackRight.setPower(right);
         motorFrontLeft.setPower(left);
         motorBackLeft.setPower(left);
+        motorLift.setPower(lift);
+        motorHook.setPower(hook);
+
+        telemetry.addData("Motor left", left);
+        telemetry.addData("Motor right", right);
+        telemetry.addData("Motor lift", lift);
+        telemetry.addData("Motor hook", hook);
     }
 
     /*
