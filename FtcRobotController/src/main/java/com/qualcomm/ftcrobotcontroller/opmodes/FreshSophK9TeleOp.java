@@ -82,21 +82,21 @@ public class FreshSophK9TeleOp extends OpMode {
         float right = (float) scaleInput(Range.clip(gamepad1.left_stick_y, -1, 1));
         float left = (float) scaleInput(Range.clip(gamepad1.right_stick_y, -1, 1));
 
-        float armAnglePow = (float) scaleInput(Range.clip(gamepad2.left_stick_y, -1, 1));
-        float armExtendPow = (float) scaleInput(Range.clip(gamepad2.right_stick_y, -1, 1));
+        float armAnglePow = (float) scaleInputSlow(Range.clip(gamepad2.left_stick_y, -1, 1));
+        float armExtendPow = (float) scaleInputSlow(Range.clip(gamepad2.right_stick_y, -1, 1));
 
         treadLeft.setPower(left);
         treadRight.setPower(right);
         armAngle.setPower(armAnglePow);
         armExtend.setPower(armExtendPow);
 
-        if(gamepad1.dpad_up) climberHighPos += .1;
-        if(gamepad1.dpad_down) climberHighPos -= .1;
-        if(gamepad1.dpad_right) climberLowPos += .1;
-        if(gamepad1.dpad_left) climberLowPos -= .1;
+        if(gamepad1.dpad_up) climberHighPos = Range.clip(climberHighPos + .01, 0, 1);
+        if(gamepad1.dpad_down) climberHighPos = Range.clip(climberHighPos - .01, 0, 1);
+        if(gamepad1.dpad_right) climberLowPos = Range.clip(climberLowPos + .01, 0, 1);
+        if(gamepad1.dpad_left) climberLowPos = Range.clip(climberLowPos - .01, 0, 1);;
 
-        climberHigh.setPosition(Range.clip(climberHighPos, 0.0, 1.0));
-        climberLow.setPosition(Range.clip(climberLowPos, 0.0, 1.0));
+        climberHigh.setPosition(climberHighPos);
+        climberLow.setPosition(climberLowPos);
 
         telemetry.addData("left", left);
         telemetry.addData("right", right);
@@ -151,5 +151,43 @@ public class FreshSophK9TeleOp extends OpMode {
         // return scaled value.
         return dScale;
     }
+
+
+    /*
+     * This method scales the joystick input so for low joystick values, the
+     * scaled value is less than linear.  This is to make it easier to drive
+     * the robot more precisely at slower speeds.
+     *
+     * EVEN MORE PRECISE
+     */
+    double scaleInputSlow(double dVal)  {
+        double[] scaleArray = { 0.0, 0.02, 0.03, 0.03, 0.04, 0.04, 0.06, 0.07,
+                0.10, 0.10, 0.12, 0.15, 0.17, 0.20, 0.23, 0.26, .3 };
+
+        // get the corresponding index for the scaleInput array.
+        int index = (int) (dVal * 16.0);
+
+        // index should be positive.
+        if (index < 0) {
+            index = -index;
+        }
+
+        // index cannot exceed size of array minus 1.
+        if (index > 16) {
+            index = 16;
+        }
+
+        // get value from the array.
+        double dScale = 0.0;
+        if (dVal < 0) {
+            dScale = -scaleArray[index];
+        } else {
+            dScale = scaleArray[index];
+        }
+
+        // return scaled value.
+        return dScale;
+    }
+
 
 }
