@@ -70,6 +70,8 @@ public class FtcOpModeRegister implements OpModeRegister {
     manager.register("SeniorK9TeleOp", SeniorK9TeleOp.class);
     manager.register("FreshSophK9TeleOp", FreshSophK9TeleOp.class);
 
+    manager.register("JuniorAuto when on Red Team", new JuniorAuto(JuniorAuto.Mode.On_Red_Team));
+    manager.register("JuniorAuto when on Blue Team", new JuniorAuto(JuniorAuto.Mode.On_Blue_Team));
     /*
      * Uncomment any of the following lines if you want to register an op mode.
      */
