@@ -13,6 +13,21 @@ import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.util.Log;
 
+enum Color
+{
+    R, G, B
+};
+class ColorComp
+{
+    final int value;
+    final Color component;
+    public ColorComp(final int val, final Color comp)
+    {
+        value = val;
+        component = comp;
+    }
+};
+
 /**
  * TeleOp Mode
  * <p>
@@ -79,47 +94,57 @@ public class CameraOp extends OpMode {
      * This method will be called repeatedly in a loop
      * @see com.qualcomm.robotcore.eventloop.opmode.OpMode#loop()
      */
-    public int highestColor(int red, int green, int blue) {
+    public ColorComp highestColor(int red, int green, int blue) {
         int[] color = {red,green,blue};
-        int value = 0;
+        int color_i = 0;
         for (int i = 1; i < 3; i++) {
-            if (color[value] < color[i]) {
-                value = i;
+            if (color[color_i] < color[i]) {
+                color_i = i;
             }
         }
-        return value;
+        Color c;
+        if(color_i == 0) c = Color.R;
+        else if(color_i == 1) c = Color.G;
+        else c = Color.B;
+        return new ColorComp(color[color_i], c);
     }
 
     @Override
     public void loop() {
+
+        // Idea:
+        // - Gaussian Blur
+        // - Check three segments
+        // - Rotate until ramp color is center
+        // - Move forward
+        // - Do less blur, more segments?
         if (yuvImage != null) {
-            int redValue = 0;
-            int blueValue = 0;
-            int greenValue = 0;
-            convertImage();
-            for (int x = 0; x < width; x++) {
-                for (int y = 0; y < height; y++) {
-                    int pixel = image.getPixel(x, y);
-                    redValue += red(pixel);
-                    blueValue += blue(pixel);
-                    greenValue += green(pixel);
+            int segments = 9;
+            ColorComp[] colors = new ColorComp[segments];
+            for(int i = 0; i < segments; ++i) {
+                int redValue = 0;
+                int blueValue = 0;
+                int greenValue = 0;
+                convertImage();
+                // Does this make sense?
+                // We are separating our preview into 9 segments, then we are taking the most color
+                // in each.
+                int start = (width / segments) * segments;
+                int end = Math.min(width, start + width / segments);
+                for (int x = start; x < end; x++) {
+                    for (int y = 0; y < height; y++) {
+                        int pixel = image.getPixel(x, y);
+                        redValue += red(pixel);
+                        blueValue += blue(pixel);
+                        greenValue += green(pixel);
+                    }
                 }
+
+                colors[i] = highestColor(redValue, greenValue, blueValue);
             }
-            int color = highestColor(redValue, greenValue, blueValue);
-            String colorString = "";
-            switch (color) {
-                case 0:
-                    colorString = "RED";
-                    break;
-                case 1:
-                    colorString = "GREEN";
-                    break;
-                case 2:
-                    colorString = "BLUE";
-            }
-            telemetry.addData("Color:", "Color detected is: " + colorString);
+
+            // We have the colors of each segment.
+            // Figure out which color we actually want.
         }
-        telemetry.addData("Looped","Looped " + Integer.toString(looped) + " times");
-        Log.d("DEBUG:",data);
     }
 }
