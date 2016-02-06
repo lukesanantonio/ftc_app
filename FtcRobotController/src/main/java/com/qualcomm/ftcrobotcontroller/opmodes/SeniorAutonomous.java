@@ -12,13 +12,11 @@ package com.qualcomm.ftcrobotcontroller.opmodes;
 public class SeniorAutonomous extends OpMode {
 
     DcMotor motorFrontRight;
-    DcMotor motorFrontLeft;
     DcMotor motorBackRight;
+    DcMotor motorFrontLeft;
     DcMotor motorBackLeft;
     DcMotor motorLift;
     DcMotor motorHook;
-
-    ElapsedTime time;
 
     @Override
     public void init() {
@@ -32,19 +30,33 @@ public class SeniorAutonomous extends OpMode {
 
     }
 
+    @Override
+    public void start(){
+        resetStartTime();
+    }
+
         @Override
         public void loop () {
 
-            while (time.time() < 1.0) {
+            if (time > 10.0 && time < 15) {
 
-                motorFrontRight.setPower(0.5);
+                motorFrontRight.setPower(-0.5);
                 motorFrontLeft.setPower (0.5);
-                motorBackRight.setPower (0.5);
+                motorBackRight.setPower (-0.5);
                 motorBackLeft.setPower  (0.5);
 
             }
 
-            while (time.time() > 1.0 && time.time() < 2.5) {
+            else {
+
+                motorFrontRight.setPower(0.0);
+                motorFrontLeft.setPower (0.0);
+                motorBackRight.setPower (0.0);
+                motorBackLeft.setPower  (0.0);
+
+            }
+            telemetry.addData("time", time);
+         /*   while (time.time() > 1.0 && time.time() < 2.5) {
 
                 motorFrontRight.setPower(-1.0);
                 motorFrontLeft.setPower ( 1.0);
@@ -68,6 +80,7 @@ public class SeniorAutonomous extends OpMode {
                 motorBackRight.setPower (0);
                 motorBackLeft.setPower  (0);
             }
+           */
 
         }
 
