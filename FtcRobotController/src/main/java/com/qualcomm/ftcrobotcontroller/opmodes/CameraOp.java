@@ -145,6 +145,16 @@ public class CameraOp extends OpMode {
 
             // We have the colors of each segment.
             // Figure out which color we actually want.
+            ColorComp highest = colors[0];
+            int highest_i = 0;
+            for(int i = 0; i < colors.length; ++i)
+            {
+                if(highest.value < colors[i].value) {
+                    highest = colors[i];
+                    highest_i = 0;
+                }
+            }
+            telemetry.addData("where", highest_i);
         }
     }
 }
