@@ -30,8 +30,6 @@ public class JuniorK9TeleOp extends OpMode {
     DcMotor winchMotor;
     double winchPower;
 
-    boolean swap_joysticks;
-    double time_since_last_swap;
 
     /*
      * Code to run when the op mode is first enabled goes here
@@ -40,7 +38,6 @@ public class JuniorK9TeleOp extends OpMode {
      */
     @Override
     public void init() {
-        swap_joysticks = false;
 
 		/*
 		 * Use the hardwareMap to get the dc motors and servos by name. Note
@@ -71,8 +68,6 @@ public class JuniorK9TeleOp extends OpMode {
 
         winchMotor = hardwareMap.dcMotor.get("winch");
         winchPower = 0.0;
-
-        time_since_last_swap = time;
     }
 
     /*
@@ -90,28 +85,21 @@ public class JuniorK9TeleOp extends OpMode {
 		 * wrist/claw via the a,b, x, y buttons
 		 */
 
+        // I don't even know
         float right = Range.clip(gamepad1.right_stick_y, -1, 1);
-        float left = Range.clip(gamepad1.left_stick_y, -1, 1);
-
-        // We can do this because the range is symetric
-        if(swap_joysticks)
-        {
-            float tmp = left;
-            left = right;
-            right = tmp;
-        }
+        float left = Range.clip(-gamepad1.left_stick_y, -1, 1);
 
         // scale the joystick value to make it easier to control
         // the robot more precisely at slower speeds.
-        right = (float) scaleInput(right);
-        left =  (float) scaleInput(left);
+        left = (float) scaleInput(left);
+        right =  (float) scaleInput(right);
 
         // write the values to the motors
-        motorRightWheel.setPower(right);
-        motorRightTread.setPower(right);
+        motorRightWheel.setPower(left);
+        motorRightTread.setPower(left);
 
-        motorLeftWheel.setPower(left);
-        motorLeftTread.setPower(left);
+        motorLeftWheel.setPower(right);
+        motorLeftTread.setPower(right);
 
         float arm1 = Range.clip(-gamepad2.left_stick_y, -1, 1);
         arm1 = (float) scaleInput(arm1);
@@ -127,20 +115,11 @@ public class JuniorK9TeleOp extends OpMode {
 
         winchMotor.setPower(winchPower);
 
-        if(gamepad1.a && time - time_since_last_swap < .3)
-        {
-            // Toggle state
-            swap_joysticks = !swap_joysticks;
-            // Mark that time
-            time_since_last_swap = time;
-        }
-
         telemetry.addData("Motor left", left);
         telemetry.addData("Motor right", right);
         telemetry.addData("Motor arm", arm1);
         telemetry.addData("Motor elbow", arm2);
         telemetry.addData("Motor winch", winchPower);
-
     }
 
     /*

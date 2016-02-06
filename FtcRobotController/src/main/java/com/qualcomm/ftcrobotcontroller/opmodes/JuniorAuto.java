@@ -38,16 +38,35 @@ public class JuniorAuto extends JuniorK9TeleOp {
     @Override
     public void loop()
     {
-        if(time < 3.0)
+        if(time < 2.0)
         {
-            super.motorLeftTread.setPower(.7);
-            super.motorRightTread.setPower(.7);
-            super.motorLeftWheel.setPower(.7);
-            super.motorRightWheel.setPower(.7);
+            super.motorLeftTread.setPower(-1.0);
+            super.motorRightTread.setPower(-1.0);
+            super.motorLeftWheel.setPower(-1.0);
+            super.motorRightWheel.setPower(-1.0);
         }
-        else if(time < 6.0)
+        else if(time < 2.5) {
+            if (cur_mode == Mode.On_Blue_Team) {
+                super.motorLeftTread.setPower(1.0);
+                super.motorRightTread.setPower(-1.0);
+                super.motorLeftWheel.setPower(1.0);
+                super.motorRightWheel.setPower(-1.0);
+            }
+            else
+            {
+                super.motorLeftTread.setPower(-1.0);
+                super.motorRightTread.setPower(1.0);
+                super.motorLeftWheel.setPower(-1.0);
+                super.motorRightWheel.setPower(1.0);
+            }
+        }
+        else if(time < 3.0)
         {
-            super.armMotor.setPower(1.0);
+            super.motorLeftTread.setPower(1.0);
+            super.motorRightTread.setPower(1.0);
+            super.motorLeftWheel.setPower(1.0);
+            super.motorRightWheel.setPower(1.0);
+            //super.armMotor.setPower(1.0);
         }
         else
         {
@@ -55,7 +74,6 @@ public class JuniorAuto extends JuniorK9TeleOp {
             super.motorRightTread.setPower(0.0);
             super.motorLeftWheel.setPower(0.0);
             super.motorRightWheel.setPower(0.0);
-            super.armMotor.setPower(0.0);
         }
     }
 }
