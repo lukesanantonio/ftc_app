@@ -25,8 +25,14 @@ public class FreshSophK9TeleOp extends OpMode {
     double climberHighPos = 0.0;
     double climberLowPos = 0.0;
 
+    double leftSidePos = 0.0;
+    double rightSidePos = 0.0;
+
     Servo climberHigh;
     Servo climberLow;
+
+    Servo leftSideServo;
+    Servo rightSideServo;
 
     /*
      * Code to run when the op mode is first enabled goes here
@@ -62,6 +68,8 @@ public class FreshSophK9TeleOp extends OpMode {
 
         climberHigh = hardwareMap.servo.get("climber high");
         climberLow = hardwareMap.servo.get("climber low");
+        leftSideServo = hardwareMap.servo.get("left side servo");
+        rightSideServo = hardwareMap.servo.get("right side servo");
     }
 
     /*
@@ -82,9 +90,21 @@ public class FreshSophK9TeleOp extends OpMode {
         float right = (float) scaleInput(Range.clip(gamepad1.left_stick_y, -1, 1));
         float left = (float) scaleInput(Range.clip(gamepad1.right_stick_y, -1, 1));
 
-        float armAnglePow = (float) scaleInputSlow(Range.clip(gamepad2.left_stick_y, -1, 1));
-        float armExtendPow = (float) scaleInputSlow(Range.clip(gamepad2.right_stick_y, -1, 1));
+        float armAnglePow = 0.0f;
+        float armExtendPow = 0.0f;
+        if(gamepad2.left_bumper)
+        {
+            // Do it slower
+            armAnglePow = (float) scaleInputSlow(Range.clip(gamepad2.left_stick_y, -1, 1));
+            armExtendPow = (float) scaleInputSlow(Range.clip(gamepad2.right_stick_y, -1, 1));
+        }
+        else
+        {
+            // Regular
+            armAnglePow = (float) scaleInput(Range.clip(gamepad2.left_stick_y, -1, 1));
+            armExtendPow = (float) scaleInput(Range.clip(gamepad2.right_stick_y, -1, 1));
 
+        }
         treadLeft.setPower(left);
         treadRight.setPower(right);
         armAngle.setPower(armAnglePow);
@@ -93,10 +113,18 @@ public class FreshSophK9TeleOp extends OpMode {
         if(gamepad1.dpad_up) climberHighPos = Range.clip(climberHighPos + .01, 0, 1);
         if(gamepad1.dpad_down) climberHighPos = Range.clip(climberHighPos - .01, 0, 1);
         if(gamepad1.dpad_right) climberLowPos = Range.clip(climberLowPos + .01, 0, 1);
-        if(gamepad1.dpad_left) climberLowPos = Range.clip(climberLowPos - .01, 0, 1);;
+        if(gamepad1.dpad_left) climberLowPos = Range.clip(climberLowPos - .01, 0, 1);
+
+        if(gamepad2.dpad_up) rightSidePos = Range.clip(rightSidePos + .01, 0, 1);
+        if(gamepad2.dpad_down) rightSidePos = Range.clip(rightSidePos - .01, 0, 1);
+        if(gamepad2.dpad_right) leftSidePos = Range.clip(leftSidePos + .01, 0, 1);
+        if(gamepad2.dpad_left) leftSidePos = Range.clip(leftSidePos - .01, 0, 1);
 
         climberHigh.setPosition(climberHighPos);
         climberLow.setPosition(climberLowPos);
+
+        leftSideServo.setPosition(leftSidePos);
+        rightSideServo.setPosition(rightSidePos);
 
         telemetry.addData("left", left);
         telemetry.addData("right", right);
@@ -104,7 +132,8 @@ public class FreshSophK9TeleOp extends OpMode {
         telemetry.addData("arm extend", armExtendPow);
         telemetry.addData("climber high", climberHighPos);
         telemetry.addData("climber low", climberLowPos);
-
+        telemetry.addData("left servo pos", leftSidePos);
+        telemetry.addData("right servo pos", rightSidePos);
     }
 
     /*
