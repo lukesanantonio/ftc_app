@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.hardware.Servo;
  * Enables control of the robot via the gamepad
  */
 
-public class FreshSophAutoRedLeft extends OpMode {
+public class StraightAuto extends OpMode {
 
     DcMotor treadLeft;
     DcMotor treadRight;
@@ -23,6 +23,14 @@ public class FreshSophAutoRedLeft extends OpMode {
 
     Servo climberHigh;
     Servo climberLow;
+
+    double time_delay;
+
+    public StraightAuto(double delay)
+    {
+        time_delay = delay;
+    }
+
     /*
      * Code to run when the op mode is first enabled goes here
      *
@@ -48,9 +56,9 @@ public class FreshSophAutoRedLeft extends OpMode {
 		 *    "servo_1" controls the arm joint of the manipulator.
 		 *    "servo_6" controls the claw joint of the manipulator.
 		 */
-        treadLeft = hardwareMap.dcMotor.get("right");
-        treadRight = hardwareMap.dcMotor.get("left");
-        treadRight.setDirection(DcMotor.Direction.REVERSE);
+        treadRight = hardwareMap.dcMotor.get("right");
+        treadLeft = hardwareMap.dcMotor.get("left");
+        treadLeft.setDirection(DcMotor.Direction.REVERSE);
 
         armAngle = hardwareMap.dcMotor.get("arm angle");
         armExtend = hardwareMap.dcMotor.get("arm extend");
@@ -62,6 +70,11 @@ public class FreshSophAutoRedLeft extends OpMode {
         climberLow.setPosition(1.0);
     }
 
+    @Override
+    public void start(){
+        resetStartTime();
+    }
+
     /*
      * This method will be called repeatedly in a loop
      *
@@ -69,34 +82,35 @@ public class FreshSophAutoRedLeft extends OpMode {
      */
     @Override
     public void loop() {
+        float left = 0.0f;
+        float right = 0.0f;
 
-        float left = 0;
-        float right = 0;
-        if(time < 1.0)
+        if(time < time_delay)
         {
-            left = 1.0f;
-            right = 1.0f;
+            // Both left and right will remain zero.
         }
-        else if(time < 2.0)
-        {
-            left = 1.0f;
+        else if(time < 8.0 + time_delay){
+            left = -0.5f;
+            right = -0.5f;
+        }
+/*
+        if(time < time_delay){
+
+        }
+        else if (time < 2.0 + time_delay){
+            left = -1.0f;
             right = -1.0f;
         }
-        else if(time < 4.0)
-        {
-            left = 1.0f;
-            right = 1.0f;
+        else if(time < 5.0 + time_delay){
+            left = -.8f;
+            right = 0.0f;
         }
-        else if(time < 5.0)
-        {
-            left = 1.0f;
+        else if(time < 8.0 + time_delay){
+            left = -1.0f;
             right = -1.0f;
         }
-        else if(time < 5.5)
-        {
-            left = 1.0f;
-            right = 1.0f;
-        }
+*/
+
 
         float armAnglePow = 0.0f;
         float armExtendPow = 0.0f;

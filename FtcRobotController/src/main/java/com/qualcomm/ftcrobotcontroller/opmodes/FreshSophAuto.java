@@ -4,9 +4,20 @@
 
 package com.qualcomm.ftcrobotcontroller.opmodes;
 
+import android.content.Context;
+import android.util.Log;
+
+import com.qualcomm.ftcrobotcontroller.FtcRobotControllerActivity;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.StreamCorruptedException;
+import java.nio.ByteBuffer;
 
 /**
  * TeleOp Mode
@@ -14,7 +25,7 @@ import com.qualcomm.robotcore.hardware.Servo;
  * Enables control of the robot via the gamepad
  */
 
-public class FreshSophAutoBlueLeft extends OpMode {
+public class FreshSophAuto extends OpMode {
 
     DcMotor treadLeft;
     DcMotor treadRight;
@@ -23,6 +34,11 @@ public class FreshSophAutoBlueLeft extends OpMode {
 
     Servo climberHigh;
     Servo climberLow;
+
+    FileInputStream sampledDataFileStream;
+    ObjectInputStream objectStream;
+
+    String error;
     /*
      * Code to run when the op mode is first enabled goes here
      *
@@ -48,9 +64,9 @@ public class FreshSophAutoBlueLeft extends OpMode {
 		 *    "servo_1" controls the arm joint of the manipulator.
 		 *    "servo_6" controls the claw joint of the manipulator.
 		 */
-        treadLeft = hardwareMap.dcMotor.get("right");
-        treadRight = hardwareMap.dcMotor.get("left");
-        treadRight.setDirection(DcMotor.Direction.REVERSE);
+        treadRight = hardwareMap.dcMotor.get("right");
+        treadLeft = hardwareMap.dcMotor.get("left");
+        treadLeft.setDirection(DcMotor.Direction.REVERSE);
 
         armAngle = hardwareMap.dcMotor.get("arm angle");
         armExtend = hardwareMap.dcMotor.get("arm extend");
@@ -62,6 +78,47 @@ public class FreshSophAutoBlueLeft extends OpMode {
         climberLow.setPosition(1.0);
     }
 
+    @Override
+    public void start(){
+        resetStartTime();
+
+        FtcRobotControllerActivity app = (FtcRobotControllerActivity) hardwareMap.appContext;
+        try {
+            sampledDataFileStream = app.context.openFileInput("sampled_auto.txt");
+            objectStream = new ObjectInputStream(sampledDataFileStream);
+        } catch (FileNotFoundException e) {
+
+            error = "Failed to find file";
+        } catch (StreamCorruptedException e) {
+            error = "Stream corrupted";
+        } catch (IOException e) {
+            error = "IO Exception corrupted";
+        }
+    }
+
+    public void closeStreams()
+    {
+        try {
+            if(objectStream != null) objectStream.close();
+            if(sampledDataFileStream != null) sampledDataFileStream.close();
+        } catch (IOException e) {
+
+        }
+        catch(NullPointerException e) {
+
+        }
+    }
+
+    float readValue() throws IOException {
+        float ret = 0.0f;
+        if(objectStream == null){
+            error = "Bad Object Stream";
+            return ret;
+        }
+        ret = objectStream.readFloat();
+        return ret;
+    }
+
     /*
      * This method will be called repeatedly in a loop
      *
@@ -69,37 +126,19 @@ public class FreshSophAutoBlueLeft extends OpMode {
      */
     @Override
     public void loop() {
-
-        float left = 0;
-        float right = 0;
-        if(time < 1.0)
-        {
-            left = 1.0f;
-            right = 1.0f;
-        }
-        else if(time < 2.0)
-        {
-            left = 1.0f;
-            right = -1.0f;
-        }
-        else if(time < 3.0)
-        {
-            left = 1.0f;
-            right = 1.0f;
-        }
-        else if(time < 4.0)
-        {
-            left = 1.0f;
-            right = -1.0f;
-        }
-        else if(time < 4.5)
-        {
-            left = 1.0f;
-            right = 1.0f;
-        }
-
+        float left = 0.0f;
+        float right = 0.0f;
         float armAnglePow = 0.0f;
         float armExtendPow = 0.0f;
+        try {
+            right = readValue();
+            left = readValue();
+            armAnglePow = readValue();
+            armExtendPow = readValue();
+        } catch (IOException e)
+        {
+            error = "IO exception in loop";
+        }
 
         treadLeft.setPower(left);
         treadRight.setPower(right);
@@ -111,6 +150,10 @@ public class FreshSophAutoBlueLeft extends OpMode {
         telemetry.addData("arm angle", armAnglePow);
         telemetry.addData("arm extend", armExtendPow);
 
+        FtcRobotControllerActivity app = (FtcRobotControllerActivity) hardwareMap.appContext;
+        telemetry.addData("file path", app.context.getFilesDir().getAbsolutePath());
+        if(error != null) telemetry.addData("error", error);
+        else telemetry.addData("error", "NO error");
     }
 
     /*
@@ -120,7 +163,7 @@ public class FreshSophAutoBlueLeft extends OpMode {
      */
     @Override
     public void stop() {
-
+        closeStreams();
     }
 
 

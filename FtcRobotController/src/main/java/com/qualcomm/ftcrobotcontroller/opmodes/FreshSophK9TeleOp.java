@@ -4,10 +4,20 @@
 
 package com.qualcomm.ftcrobotcontroller.opmodes;
 
+import android.content.Context;
+import android.util.Log;
+
+import com.qualcomm.ftcrobotcontroller.FtcRobotControllerActivity;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 
 /**
  * TeleOp Mode
@@ -34,6 +44,17 @@ public class FreshSophK9TeleOp extends OpMode {
     Servo leftSideServo;
     Servo rightSideServo;
 
+    boolean record_motors;
+    FileOutputStream fileStream;
+    ObjectOutputStream objectStream;
+
+    String error;
+
+    public FreshSophK9TeleOp(boolean record)
+    {
+        record_motors = record;
+    }
+
     /*
      * Code to run when the op mode is first enabled goes here
      *
@@ -59,9 +80,10 @@ public class FreshSophK9TeleOp extends OpMode {
 		 *    "servo_1" controls the arm joint of the manipulator.
 		 *    "servo_6" controls the claw joint of the manipulator.
 		 */
-        treadLeft = hardwareMap.dcMotor.get("right");
-        treadRight = hardwareMap.dcMotor.get("left");
+        treadRight = hardwareMap.dcMotor.get("right");
+        treadLeft = hardwareMap.dcMotor.get("left");
         treadLeft.setDirection(DcMotor.Direction.REVERSE);
+        treadRight.setDirection(DcMotor.Direction.FORWARD);
 
         armAngle = hardwareMap.dcMotor.get("arm angle");
         armExtend = hardwareMap.dcMotor.get("arm extend");
@@ -72,6 +94,25 @@ public class FreshSophK9TeleOp extends OpMode {
         rightSideServo = hardwareMap.servo.get("right side servo");
     }
 
+    @Override
+    public void start() {
+        resetStartTime();
+        if (record_motors) {
+            FtcRobotControllerActivity app = (FtcRobotControllerActivity) hardwareMap.appContext;
+            try {
+                fileStream = app.context.openFileOutput("sampled_auto.txt", Context.MODE_PRIVATE);
+                objectStream = new ObjectOutputStream(fileStream);
+            } catch (FileNotFoundException e) {
+                // Turn off recording
+                record_motors = false;
+                error = "File Not Found Exception";
+            } catch (IOException e) {
+                record_motors = false;
+                error = "IOException opening output stream";
+            }
+        }
+    }
+
     /*
      * This method will be called repeatedly in a loop
      *
@@ -79,7 +120,6 @@ public class FreshSophK9TeleOp extends OpMode {
      */
     @Override
     public void loop() {
-
 		/*
 		 * Gamepad 1
 		 *
@@ -87,6 +127,7 @@ public class FreshSophK9TeleOp extends OpMode {
 		 * wrist/claw via the a,b, x, y buttons
 		 */
 
+        // Find motor values.
         float right = (float) scaleInput(Range.clip(gamepad1.left_stick_y, -1, 1));
         float left = (float) scaleInput(Range.clip(gamepad1.right_stick_y, -1, 1));
 
@@ -105,6 +146,27 @@ public class FreshSophK9TeleOp extends OpMode {
             armExtendPow = (float) scaleInput(Range.clip(gamepad2.right_stick_y, -1, 1));
 
         }
+
+        if(record_motors && objectStream != null)
+        {
+            try {
+                objectStream.writeFloat(right);
+                objectStream.writeFloat(left);
+                objectStream.writeFloat(armAnglePow);
+                objectStream.writeFloat(armExtendPow);
+            } catch (IOException e) {
+                closeStreams();
+                error = "IO Exception writing";
+                record_motors = false;
+            }
+        }
+        if(time > 30.0)
+        {
+            record_motors = false;
+            closeStreams();
+            error = "RAN OUT OF TIME";
+        }
+
         treadLeft.setPower(left);
         treadRight.setPower(right);
         armAngle.setPower(armAnglePow);
@@ -134,6 +196,23 @@ public class FreshSophK9TeleOp extends OpMode {
         telemetry.addData("climber low", climberLowPos);
         telemetry.addData("left servo pos", leftSidePos);
         telemetry.addData("right servo pos", rightSidePos);
+        if(error != null) telemetry.addData("error", error);
+        else telemetry.addData("error", "NO error");
+
+        telemetry.addData("time", time);
+    }
+
+    public void closeStreams()
+    {
+        try {
+            if(objectStream != null) objectStream.close();
+            if(fileStream != null) fileStream.close();
+        } catch (IOException e) {
+
+        }
+        catch(NullPointerException e) {
+
+        }
     }
 
     /*
@@ -143,7 +222,7 @@ public class FreshSophK9TeleOp extends OpMode {
      */
     @Override
     public void stop() {
-
+        closeStreams();
     }
 
 

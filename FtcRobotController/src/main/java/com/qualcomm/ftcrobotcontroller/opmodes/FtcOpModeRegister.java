@@ -62,19 +62,16 @@ public class FtcOpModeRegister implements OpModeRegister {
     //manager.register ("PushBotManual", PushBotManual.class);
 
     //manager.register("JuniorAuto",       JuniorAuto.class);
-    manager.register("FreshSophAutoBlueRight",FreshSophAutoBlueRight.class);
-    manager.register("FreshSophAutoRedRight", FreshSophAutoBlueRight.class);
-    manager.register("FreshSophAutoBlueLeft", FreshSophAutoBlueRight.class);
-    manager.register("FreshSophAutoRedLeftt", FreshSophAutoBlueRight.class);
-    manager.register("JuniorK9TeleOp", JuniorK9TeleOp.class);
-    manager.register("SeniorK9TeleOp", SeniorK9TeleOp.class);
-    manager.register("FreshSophK9TeleOp", FreshSophK9TeleOp.class);
+    manager.register("StraightAuto with 0 delay", new StraightAuto(0.0));
+    manager.register("StraightAuto with 2 second delay", new StraightAuto(2.0));
+    manager.register("StraightAuto with 5 second delay", new StraightAuto(5.0));
+    manager.register("StraightAuto with 10 seconds delay", new StraightAuto(10.0));
 
-    manager.register("JuniorAuto when on Red Team", new JuniorAuto(JuniorAuto.Mode.On_Red_Team));
-    manager.register("JuniorAuto when on Blue Team", new JuniorAuto(JuniorAuto.Mode.On_Blue_Team));
+    manager.register("Run recorded sequence", FreshSophAuto.class);
 
-    manager.register("SeniorAuto", SeniorAutonomous.class);
-    manager.register("CameraOP", CameraOp.class);
+    manager.register("FreshSophK9TeleOp **Record to Auto**", new FreshSophK9TeleOp(true));
+    manager.register("FreshSophK9TeleOp **NO RECORD**", new FreshSophK9TeleOp(false));
+
     /*
      * Uncomment any of the following lines if you want to register an op mode.
      */
