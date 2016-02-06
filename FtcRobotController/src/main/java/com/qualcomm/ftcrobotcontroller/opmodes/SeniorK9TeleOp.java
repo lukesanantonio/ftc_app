@@ -17,15 +17,15 @@ public class SeniorK9TeleOp extends OpMode {
     DcMotor motorLift;
     DcMotor motorHook;
 
-    //Servo claw; ???
+    Servo claw;
     Servo red;
     Servo blue;
 
     final double RESET_RED_SERVO = 0.0;
     final double ACTIVATE_RED_SERVO = 1.0;
 
-    final double RESET_BLUE_SERVO = 0.0;
-    final double ACTIVATE_BLUE_SERVO = 1.0;
+    final double RESET_BLUE_SERVO = 1.0;
+    final double ACTIVATE_BLUE_SERVO = 0.0;
 
     /*
      * Code to run when the op mode is first enabled goes here
@@ -48,6 +48,7 @@ public class SeniorK9TeleOp extends OpMode {
         motorLift       = hardwareMap.dcMotor.get("scissor lift");
         motorHook       = hardwareMap.dcMotor.get("hook");
 
+        claw = hardwareMap.servo.get("claw");
         red  = hardwareMap.servo.get("red");
         blue = hardwareMap.servo.get("blue");
     }
@@ -60,25 +61,37 @@ public class SeniorK9TeleOp extends OpMode {
     @Override
     public void loop() {
 
-        if(gamepad1.y)
+        if(gamepad1.b)
         {
-            red.setPosition(RESET_RED_SERVO);
-            blue.setPosition(RESET_BLUE_SERVO);
+             blue.setPosition(ACTIVATE_BLUE_SERVO);
         }
+       /* else if(gamepad1.y)
+        {
+            blue.setPosition(ACTIVATE_BLUE_SERVO);
+            red.setPosition(ACTIVATE_RED_SERVO);
+        } */
         else if(gamepad1.x)
         {
-            red.setPosition(RESET_RED_SERVO);
-            blue.setPosition(ACTIVATE_BLUE_SERVO);
-        }
-        else if(gamepad1.b)
-        {
             red.setPosition(ACTIVATE_RED_SERVO);
-            blue.setPosition(RESET_BLUE_SERVO);
         }
         else if(gamepad1.a)
         {
-            red.setPosition(ACTIVATE_RED_SERVO);
-            blue.setPosition(ACTIVATE_BLUE_SERVO);
+            red.setPosition(RESET_RED_SERVO);
+            blue.setPosition(RESET_BLUE_SERVO);
+        }
+
+        if(gamepad2.a)
+        {
+            claw.setPosition(0.4);
+        }
+
+        if(gamepad2.b)
+        {
+            claw.setPosition(0.5);
+        }
+
+        if(gamepad2.x) {
+            claw.setPosition(0.6);
         }
 
         float left  = -gamepad1.left_stick_y;
