@@ -199,7 +199,7 @@ public class FreshSophK9TeleOp extends OpMode {
         if(error != null) telemetry.addData("error", error);
         else telemetry.addData("error", "NO error");
 
-        telemetry.addData("time", time);
+        if(record_motors) { telemetry.addData("time", time); }
     }
 
     public void closeStreams()
