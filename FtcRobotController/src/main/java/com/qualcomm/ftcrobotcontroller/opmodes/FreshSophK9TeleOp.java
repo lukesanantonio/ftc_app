@@ -10,6 +10,7 @@ import android.util.Log;
 import com.qualcomm.ftcrobotcontroller.FtcRobotControllerActivity;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorController;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
@@ -29,6 +30,8 @@ public class FreshSophK9TeleOp extends OpMode {
 
     DcMotor treadLeft;
     DcMotor treadRight;
+
+    DcMotorController arms;
     DcMotor armAngle;
     DcMotor armExtend;
 
@@ -49,6 +52,10 @@ public class FreshSophK9TeleOp extends OpMode {
     ObjectOutputStream objectStream;
 
     String error;
+
+    int setArmPosition = 0;
+    int mostRecentArmPosition = 0;
+    int numOpModes = 0;
 
     public FreshSophK9TeleOp(boolean record)
     {
@@ -85,7 +92,12 @@ public class FreshSophK9TeleOp extends OpMode {
         treadLeft.setDirection(DcMotor.Direction.REVERSE);
         treadRight.setDirection(DcMotor.Direction.FORWARD);
 
+        arms = hardwareMap.dcMotorController.get("arms");
+        arms.setMotorControllerDeviceMode(DcMotorController.DeviceMode.WRITE_ONLY);
+
         armAngle = hardwareMap.dcMotor.get("arm angle");
+        armAngle.setTargetPosition(armAngle.getCurrentPosition() + 1440 * 1);
+        armAngle.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
         armExtend = hardwareMap.dcMotor.get("arm extend");
 
         climberHigh = hardwareMap.servo.get("climber high");
@@ -113,6 +125,11 @@ public class FreshSophK9TeleOp extends OpMode {
         }
     }
 
+    boolean can_write(DcMotorController c)
+    {
+        return c.getMotorControllerDeviceMode() == DcMotorController.DeviceMode.READ_WRITE ||
+               c.getMotorControllerDeviceMode() == DcMotorController.DeviceMode.WRITE_ONLY;
+    }
     /*
      * This method will be called repeatedly in a loop
      *
@@ -136,14 +153,14 @@ public class FreshSophK9TeleOp extends OpMode {
         if(gamepad2.left_bumper)
         {
             // Do it slower
-            armAnglePow = (float) scaleInputSlow(Range.clip(gamepad2.left_stick_y, -1, 1));
-            armExtendPow = (float) scaleInputSlow(Range.clip(gamepad2.right_stick_y, -1, 1));
+            armAnglePow = (float) scaleInputSlow(Range.clip(gamepad2.right_stick_y, -1, 1));
+            armExtendPow = (float) scaleInputSlow(Range.clip(gamepad2.left_stick_y, -1, 1));
         }
         else
         {
             // Regular
-            armAnglePow = (float) scaleInput(Range.clip(gamepad2.left_stick_y, -1, 1));
-            armExtendPow = (float) scaleInput(Range.clip(gamepad2.right_stick_y, -1, 1));
+            armAnglePow = (float) scaleInput(Range.clip(gamepad2.right_stick_y, -1, 1));
+            armExtendPow = (float) scaleInput(Range.clip(gamepad2.left_stick_y, -1, 1));
 
         }
 
@@ -169,8 +186,13 @@ public class FreshSophK9TeleOp extends OpMode {
 
         treadLeft.setPower(left);
         treadRight.setPower(right);
-        armAngle.setPower(armAnglePow);
-        armExtend.setPower(armExtendPow);
+
+        if(can_write(arms)) {
+            //setArmPosition += (int) gamepad2.right_stick_y * 3.0f;
+
+            armAngle.setPower(armAnglePow);
+            armExtend.setPower(armExtendPow);
+        }
 
         if(gamepad1.dpad_up) climberHighPos = Range.clip(climberHighPos + .01, 0, 1);
         if(gamepad1.dpad_down) climberHighPos = Range.clip(climberHighPos - .01, 0, 1);
@@ -188,9 +210,26 @@ public class FreshSophK9TeleOp extends OpMode {
         leftSideServo.setPosition(leftSidePos);
         rightSideServo.setPosition(rightSidePos);
 
+        if(numOpModes % 17 == 0)
+        {
+            // Time to measure?
+            arms.setMotorControllerDeviceMode(DcMotorController.DeviceMode.READ_ONLY);
+        }
+
+        if(arms.getMotorControllerDeviceMode() == DcMotorController.DeviceMode.READ_ONLY)
+        {
+            // Ready to measure?
+            mostRecentArmPosition = armAngle.getCurrentPosition();
+            arms.setMotorControllerDeviceMode(DcMotorController.DeviceMode.WRITE_ONLY);
+            numOpModes = 0;
+        }
+
+        ++numOpModes;
+
         telemetry.addData("left", left);
         telemetry.addData("right", right);
         telemetry.addData("arm angle", armAnglePow);
+        telemetry.addData("set arm position", setArmPosition);
         telemetry.addData("arm extend", armExtendPow);
         telemetry.addData("climber high", climberHighPos);
         telemetry.addData("climber low", climberLowPos);
@@ -199,7 +238,11 @@ public class FreshSophK9TeleOp extends OpMode {
         if(error != null) telemetry.addData("error", error);
         else telemetry.addData("error", "NO error");
 
-        if(record_motors) { telemetry.addData("time", time); }
+        telemetry.addData("arm position", mostRecentArmPosition);
+        telemetry.addData("arms mode", arms.getMotorControllerDeviceMode().toString());
+        telemetry.addData("numOpModes", numOpModes);
+
+        telemetry.addData("time", time);
     }
 
     public void closeStreams()
