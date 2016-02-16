@@ -35,11 +35,11 @@ public class FreshSophK9TeleOp extends OpMode {
     DcMotor armAngle;
     DcMotor armExtend;
 
-    double climberHighPos = 0.0;
-    double climberLowPos = 0.0;
+    double climberHighPos = 0.6;
+    double climberLowPos = 0.28;
 
     double leftSidePos = 0.0;
-    double rightSidePos = 0.0;
+    double rightSidePos = 0.86;
 
     Servo climberHigh;
     Servo climberLow;
