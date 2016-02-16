@@ -61,6 +61,8 @@ public class FtcOpModeRegister implements OpModeRegister {
     //manager.register ("PushBotAuto",   PushBotAuto.class);
     //manager.register ("PushBotManual", PushBotManual.class);
 
+   manager.register("EncoderAuto", EncoderAuto.class);
+
     //manager.register("JuniorAuto",       JuniorAuto.class);
     manager.register("StraightAuto with 0 delay", new StraightAuto(0.0));
     manager.register("StraightAuto with 2 second delay", new StraightAuto(2.0));

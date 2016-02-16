@@ -26,7 +26,13 @@ import java.io.ObjectOutputStream;
  * Enables control of the robot via the gamepad
  */
 
-public class FreshSophK9TeleOp extends OpMode {
+enum Mode
+{
+    Move_Arm,
+    Reset_Arm
+}
+
+public class EncoderAuto extends OpMode {
 
     DcMotor treadLeft;
     DcMotor treadRight;
@@ -47,16 +53,9 @@ public class FreshSophK9TeleOp extends OpMode {
     Servo leftSideServo;
     Servo rightSideServo;
 
-    boolean record_motors;
-    FileOutputStream fileStream;
-    ObjectOutputStream objectStream;
+    Mode mode;
 
     String error;
-
-    public FreshSophK9TeleOp(boolean record)
-    {
-        record_motors = record;
-    }
 
     /*
      * Code to run when the op mode is first enabled goes here
@@ -89,6 +88,8 @@ public class FreshSophK9TeleOp extends OpMode {
         treadRight.setDirection(DcMotor.Direction.FORWARD);
 
         armAngle = hardwareMap.dcMotor.get("arm angle");
+        setMoveMode();
+
         armExtend = hardwareMap.dcMotor.get("arm extend");
 
         climberHigh = hardwareMap.servo.get("climber high");
@@ -100,21 +101,59 @@ public class FreshSophK9TeleOp extends OpMode {
     @Override
     public void start() {
         resetStartTime();
-        if (record_motors) {
-            FtcRobotControllerActivity app = (FtcRobotControllerActivity) hardwareMap.appContext;
-            try {
-                fileStream = app.context.openFileOutput("sampled_auto.txt", Context.MODE_PRIVATE);
-                objectStream = new ObjectOutputStream(fileStream);
-            } catch (FileNotFoundException e) {
-                // Turn off recording
-                record_motors = false;
-                error = "File Not Found Exception";
-            } catch (IOException e) {
-                record_motors = false;
-                error = "IOException opening output stream";
-            }
-        }
     }
+
+    void setMoveMode()
+    {
+        armAngle.setTargetPosition(armAngle.getCurrentPosition() + (int) (1440 * -1.5));
+        armAngle.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
+        mode = Mode.Move_Arm;
+    }
+    void setResetMode()
+    {
+        armAngle.setTargetPosition(0);
+        mode = Mode.Reset_Arm;
+    }
+
+    void doMove()
+    {
+        // Moving the encoder in a negative direction requires a positive power, which in our case
+        // lifts the arm from rest position towards the back of the robot, into the air, etc.
+        armAngle.setPower(.5);
+        telemetry.addData("arm angle power", .5);
+
+    }
+
+    void doReset()
+    {
+        armAngle.setPower(-.5);
+        telemetry.addData("arm angle power", -.5);
+    }
+
+    void updateServos()
+    {
+        if(gamepad1.dpad_up) climberHighPos = Range.clip(climberHighPos + .01, 0, 1);
+        if(gamepad1.dpad_down) climberHighPos = Range.clip(climberHighPos - .01, 0, 1);
+        if(gamepad1.dpad_right) climberLowPos = Range.clip(climberLowPos + .01, 0, 1);
+        if(gamepad1.dpad_left) climberLowPos = Range.clip(climberLowPos - .01, 0, 1);
+
+        if(gamepad2.dpad_up) rightSidePos = Range.clip(rightSidePos + .01, 0, 1);
+        if(gamepad2.dpad_down) rightSidePos = Range.clip(rightSidePos - .01, 0, 1);
+        if(gamepad2.dpad_right) leftSidePos = Range.clip(leftSidePos + .01, 0, 1);
+        if(gamepad2.dpad_left) leftSidePos = Range.clip(leftSidePos - .01, 0, 1);
+
+        climberHigh.setPosition(climberHighPos);
+        climberLow.setPosition(climberLowPos);
+
+        leftSideServo.setPosition(leftSidePos);
+        rightSideServo.setPosition(rightSidePos);
+
+        telemetry.addData("climber high", climberHighPos);
+        telemetry.addData("climber low", climberLowPos);
+        telemetry.addData("left servo pos", leftSidePos);
+        telemetry.addData("right servo pos", rightSidePos);
+    }
+
     /*
      * This method will be called repeatedly in a loop
      *
@@ -133,90 +172,51 @@ public class FreshSophK9TeleOp extends OpMode {
         float right = (float) scaleInput(Range.clip(gamepad1.left_stick_y, -1, 1));
         float left = (float) scaleInput(Range.clip(gamepad1.right_stick_y, -1, 1));
 
-        float armAnglePow = 0.0f;
-        float armExtendPow = 0.0f;
-        if(gamepad2.left_bumper)
-        {
-            // Do it slower
-            armAnglePow = (float) scaleInputSlow(Range.clip(gamepad2.right_stick_y, -1, 1));
-            armExtendPow = (float) scaleInputSlow(Range.clip(gamepad2.left_stick_y, -1, 1));
-        }
-        else
-        {
-            // Regular
-            armAnglePow = (float) scaleInput(Range.clip(gamepad2.right_stick_y, -1, 1));
-            armExtendPow = (float) scaleInput(Range.clip(gamepad2.left_stick_y, -1, 1));
-
-        }
-
-        if(record_motors && objectStream != null)
-        {
-            try {
-                objectStream.writeFloat(right);
-                objectStream.writeFloat(left);
-                objectStream.writeFloat(armAnglePow);
-                objectStream.writeFloat(armExtendPow);
-            } catch (IOException e) {
-                closeStreams();
-                error = "IO Exception writing";
-                record_motors = false;
-            }
-        }
-        if(time > 30.0)
-        {
-            record_motors = false;
-            closeStreams();
-            error = "RAN OUT OF TIME";
-        }
-
         treadLeft.setPower(left);
         treadRight.setPower(right);
 
-        armAngle.setPower(armAnglePow);
-        armExtend.setPower(armExtendPow);
+        updateServos();
 
-        if(gamepad1.dpad_up) climberHighPos = Range.clip(climberHighPos + .01, 0, 1);
-        if(gamepad1.dpad_down) climberHighPos = Range.clip(climberHighPos - .01, 0, 1);
-        if(gamepad1.dpad_right) climberLowPos = Range.clip(climberLowPos + .01, 0, 1);
-        if(gamepad1.dpad_left) climberLowPos = Range.clip(climberLowPos - .01, 0, 1);
+        if(time > 30.0)
+        {
+            error = "RAN OUT OF TIME";
+        }
+        telemetry.addData("time", time);
 
-        if(gamepad2.dpad_up) rightSidePos = Range.clip(rightSidePos + .01, 0, 1);
-        if(gamepad2.dpad_down) rightSidePos = Range.clip(rightSidePos - .01, 0, 1);
-        if(gamepad2.dpad_right) leftSidePos = Range.clip(leftSidePos + .01, 0, 1);
-        if(gamepad2.dpad_left) leftSidePos = Range.clip(leftSidePos - .01, 0, 1);
+        // A sets the arm to move, if it wasn't already doing so.
+        if(gamepad1.a && mode != Mode.Move_Arm)
+        {
+            setMoveMode();
+        }
+        else if(gamepad1.b && mode != Mode.Reset_Arm)
+        {
+            setResetMode();
+        }
 
-        climberHigh.setPosition(climberHighPos);
-        climberLow.setPosition(climberLowPos);
+        // Log the mode
+        // And do it
+        switch (mode) {
+            case Move_Arm:
+                doMove();
+                telemetry.addData("mode", "move");
+                break;
+            case Reset_Arm:
+                doReset();
+                telemetry.addData("mode", "reset");
+                break;
+        }
+        // Log arm position
+        telemetry.addData("arm position", armAngle.getCurrentPosition());
 
-        leftSideServo.setPosition(leftSidePos);
-        rightSideServo.setPosition(rightSidePos);
-
-        // Ready to measure?
+        // Log other motors as power, these come from the controller currently.
         telemetry.addData("left", left);
         telemetry.addData("right", right);
-        telemetry.addData("arm angle", armAnglePow);
-        telemetry.addData("arm extend", armExtendPow);
-        telemetry.addData("climber high", climberHighPos);
-        telemetry.addData("climber low", climberLowPos);
-        telemetry.addData("left servo pos", leftSidePos);
-        telemetry.addData("right servo pos", rightSidePos);
+        telemetry.addData("arm extend", 0.0);
+
+        // Log error if necessary
         if(error != null) telemetry.addData("error", error);
         else telemetry.addData("error", "NO error");
 
-        telemetry.addData("time", time);
-    }
-
-    public void closeStreams()
-    {
-        try {
-            if(objectStream != null) objectStream.close();
-            if(fileStream != null) fileStream.close();
-        } catch (IOException e) {
-
-        }
-        catch(NullPointerException e) {
-
-        }
     }
 
     /*
@@ -225,8 +225,7 @@ public class FreshSophK9TeleOp extends OpMode {
      * @see com.qualcomm.robotcore.eventloop.opmode.OpMode#stop()
      */
     @Override
-    public void stop() {
-        closeStreams();
+    public void stop(){
     }
 
 
