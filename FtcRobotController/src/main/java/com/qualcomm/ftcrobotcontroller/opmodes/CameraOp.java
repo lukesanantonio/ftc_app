@@ -155,6 +155,7 @@ public class CameraOp extends OpMode {
                 }
             }
             telemetry.addData("where", highest_i);
+            telemetry.addData("Camera data", data);
         }
     }
 }

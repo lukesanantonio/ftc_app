@@ -44,6 +44,7 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -54,6 +55,8 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.opencv.android.*;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.ftccommon.FtcEventLoop;
@@ -108,6 +111,8 @@ public class FtcRobotControllerActivity extends Activity {
   protected FtcRobotControllerService controllerService;
 
   protected FtcEventLoop eventLoop;
+
+  public boolean opencv_inited = false;
 
   // Shamelessly stolen from http://ftcforum.usfirst.org/showthread.php?4588-How-to-use-the-camera-as-a-sensor
   public Camera camera;
@@ -204,6 +209,15 @@ public class FtcRobotControllerActivity extends Activity {
     hittingMenuButtonBrightensScreen();
 
     if (USE_DEVICE_EMULATION) { HardwareFactory.enableDeviceEmulation(); }
+
+    if (!OpenCVLoader.initDebug()) {
+      Log.e(this.getClass().getSimpleName(), "  OpenCVLoader.initDebug(), not working.");
+      opencv_inited = true
+      ;
+    } else {
+      Log.d(this.getClass().getSimpleName(), "  OpenCVLoader.initDebug(), working.");
+      opencv_inited = true;
+    }
   }
 
   @Override
