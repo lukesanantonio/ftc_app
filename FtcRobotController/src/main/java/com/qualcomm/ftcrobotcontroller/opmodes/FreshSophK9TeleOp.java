@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorController;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.robocol.Telemetry;
 import com.qualcomm.robotcore.util.Range;
 
 import java.io.File;
@@ -25,6 +26,44 @@ import java.io.ObjectOutputStream;
  * <p>
  * Enables control of the robot via the gamepad
  */
+
+class LinearSpeadModifier {
+
+    public float scale;
+
+    public float reqSpeed;
+
+    public float curPower;
+
+    public int curPosition;
+    public int lastPosition;
+
+    // Returns motor power.
+    float getMotorPower(Telemetry tm)
+    {
+        // What is the position of the motor currently?
+        // Positive movement of the motor should correspond to a positive speed member above. Use
+        // a negative scale to reverse the motor direction.
+        int posChange = curPosition - lastPosition;
+
+        // Figure out what speed value we just experienced was
+        float instSpeed = posChange / scale;
+
+        tm.addData("zz instSpeed", instSpeed);
+
+        // Using past measurements might be useful and may be necessarily, but I want to keep this
+        // function stateless (I know it's in a class but it basically provide persistent
+        // parameters. If this were C++ I would have it accept a template with the members to
+        // provide this same thing.
+
+        // When the requested speed is larger than what we observed to be the current speed, we
+        // need a positive increase to whatever our power was previously, to properly compensate
+        // for that issue.
+        float powerError = reqSpeed - instSpeed;
+        return Range.clip(curPower + powerError, -1.0f, 1.0f);
+    }
+
+};
 
 public class FreshSophK9TeleOp extends OpMode {
 
@@ -47,15 +86,25 @@ public class FreshSophK9TeleOp extends OpMode {
     Servo leftSideServo;
     Servo rightSideServo;
 
+    float avg_turns_per_loop = 0;
+    int num_queries = 0;
+
+    float req_speed = 0;
+
     boolean record_motors;
     FileOutputStream fileStream;
     ObjectOutputStream objectStream;
 
     String error;
 
+    LinearSpeadModifier linearSpeedMod;
+
     public FreshSophK9TeleOp(boolean record)
     {
         record_motors = record;
+
+        linearSpeedMod = new LinearSpeadModifier();
+        linearSpeedMod.scale = -10;
     }
 
     /*
@@ -90,6 +139,9 @@ public class FreshSophK9TeleOp extends OpMode {
 
         armAngle = hardwareMap.dcMotor.get("arm angle");
         armExtend = hardwareMap.dcMotor.get("arm extend");
+
+        armAngle.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        armExtend.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
 
         climberHigh = hardwareMap.servo.get("climber high");
         climberLow = hardwareMap.servo.get("climber low");
@@ -146,8 +198,9 @@ public class FreshSophK9TeleOp extends OpMode {
             // Regular
             armAnglePow = (float) scaleInput(Range.clip(gamepad2.right_stick_y, -1, 1));
             armExtendPow = (float) scaleInput(Range.clip(gamepad2.left_stick_y, -1, 1));
-
         }
+
+
 
         if(record_motors && objectStream != null)
         {
@@ -173,7 +226,21 @@ public class FreshSophK9TeleOp extends OpMode {
         treadRight.setPower(right);
 
         armAngle.setPower(armAnglePow);
-        armExtend.setPower(armExtendPow);
+
+        linearSpeedMod.reqSpeed = armExtendPow;
+
+        linearSpeedMod.lastPosition = linearSpeedMod.curPosition;
+        linearSpeedMod.curPosition = armExtend.getCurrentPosition();
+
+        linearSpeedMod.curPower = (float) armExtend.getPower();
+
+        armExtend.setPower(linearSpeedMod.getMotorPower(telemetry));
+
+        telemetry.addData("zz reqSpeed", linearSpeedMod.reqSpeed);
+        telemetry.addData("zz curPosition", linearSpeedMod.curPosition);
+        telemetry.addData("zz power used", armExtend.getPower());
+        telemetry.addData("zz curPower", linearSpeedMod.curPower);
+        telemetry.addData("zz lastPosition", linearSpeedMod.lastPosition);
 
         if(gamepad1.dpad_up) climberHighPos = Range.clip(climberHighPos + .01, 0, 1);
         if(gamepad1.dpad_down) climberHighPos = Range.clip(climberHighPos - .01, 0, 1);
@@ -195,7 +262,9 @@ public class FreshSophK9TeleOp extends OpMode {
         telemetry.addData("left", left);
         telemetry.addData("right", right);
         telemetry.addData("arm angle", armAnglePow);
-        telemetry.addData("arm extend", armExtendPow);
+        telemetry.addData("arm extend", armExtend.getPower());
+        telemetry.addData("arm angle position", armAngle.getCurrentPosition());
+        telemetry.addData("arm extend position", armExtend.getCurrentPosition());
         telemetry.addData("climber high", climberHighPos);
         telemetry.addData("climber low", climberLowPos);
         telemetry.addData("left servo pos", leftSidePos);
