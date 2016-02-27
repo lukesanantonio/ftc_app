@@ -1,6 +1,7 @@
 package com.qualcomm.ftcrobotcontroller.opmodes;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
 
 /**
@@ -8,18 +9,22 @@ import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
  */
 public class ReadDistance extends OpMode {
 
-    OpticalDistanceSensor distance;
+    ColorSensor color;
 
     @Override
     public void init()
     {
-        distance = hardwareMap.opticalDistanceSensor.get("distance");
+        color = hardwareMap.colorSensor.get("color");
     }
 
     @Override
     public void loop()
     {
-        telemetry.addData("distance", distance.getLightDetected());
-        telemetry.addData("distanceRaw", distance.getLightDetectedRaw());
+        telemetry.addData("red", color.red());
+        telemetry.addData("green", color.green());
+        telemetry.addData("blue", color.blue());
+        telemetry.addData("argb", color.argb());
+        telemetry.addData("string", color.toString());
+        telemetry.addData("alpha", color.alpha());
     }
 }

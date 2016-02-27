@@ -25,7 +25,7 @@ public class Straighten extends OpMode {
     double right = -1.0;
 
     @Override
-    void init()
+    public void init()
     {
         treadRight = hardwareMap.dcMotor.get("right");
         treadLeft = hardwareMap.dcMotor.get("left");
@@ -40,7 +40,7 @@ public class Straighten extends OpMode {
     }
 
     @Override
-    void loop()
+    public void loop()
     {
         // First try rotating left.
         treadLeft.setPower(left);

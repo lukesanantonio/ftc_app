@@ -46,6 +46,8 @@ public class FreshSophK9TeleOp extends OpMode {
 
     ErrorManager error;
 
+    DefaultServoPositions positions;
+
     public FreshSophK9TeleOp(boolean record)
     {
         record_motors = record;
@@ -88,10 +90,12 @@ public class FreshSophK9TeleOp extends OpMode {
         treadRight.setDirection(DcMotor.Direction.FORWARD);
 
         armAngle = hardwareMap.dcMotor.get("arm angle");
+        armAngle.setDirection(DcMotor.Direction.REVERSE);
         armExtend = hardwareMap.dcMotor.get("arm extend");
+        armExtend.setDirection(DcMotor.Direction.REVERSE);
 
-        //armAngle.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
-        //armExtend.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        armAngle.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        armExtend.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
 
         sophServos = new SophServos();
         sophServos.initServos(hardwareMap);
@@ -117,11 +121,13 @@ public class FreshSophK9TeleOp extends OpMode {
         }
 
         FtcRobotControllerActivity app = (FtcRobotControllerActivity) hardwareMap.appContext;
-        DefaultServoPositions positions = new DefaultServoPositions(app.context);
+        positions = new DefaultServoPositions(app.context);
 
         // Load default positions
         servoValues = positions.read();
-        sophServos.setValues(servoValues);
+        if(servoValues != null) sophServos.setValues(servoValues);
+        else
+            servoValues = new ServoValues();
     }
     /*
      * This method will be called repeatedly in a loop
@@ -207,6 +213,7 @@ public class FreshSophK9TeleOp extends OpMode {
         telemetry.addData("arm extend position", armExtend.getCurrentPosition());
 
         error.logError(telemetry);
+        positions.error.logError(telemetry);
 
         telemetry.addData("time", time);
     }
