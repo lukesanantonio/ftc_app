@@ -27,84 +27,34 @@ import java.io.ObjectOutputStream;
  * Enables control of the robot via the gamepad
  */
 
-class LinearSpeadModifier {
 
-    public float scale;
-
-    public float reqSpeed;
-
-    public float curPower;
-
-    public int curPosition;
-    public int lastPosition;
-
-    // Returns motor power.
-    float getMotorPower(Telemetry tm)
-    {
-        // What is the position of the motor currently?
-        // Positive movement of the motor should correspond to a positive speed member above. Use
-        // a negative scale to reverse the motor direction.
-        int posChange = curPosition - lastPosition;
-
-        // Figure out what speed value we just experienced was
-        float instSpeed = posChange / scale;
-
-        tm.addData("zz instSpeed", instSpeed);
-
-        // Using past measurements might be useful and may be necessarily, but I want to keep this
-        // function stateless (I know it's in a class but it basically provide persistent
-        // parameters. If this were C++ I would have it accept a template with the members to
-        // provide this same thing.
-
-        // When the requested speed is larger than what we observed to be the current speed, we
-        // need a positive increase to whatever our power was previously, to properly compensate
-        // for that issue.
-        float powerError = reqSpeed - instSpeed;
-        return Range.clip(curPower + powerError, -1.0f, 1.0f);
-    }
-
-};
 
 public class FreshSophK9TeleOp extends OpMode {
 
     DcMotor treadLeft;
     DcMotor treadRight;
 
-    DcMotorController arms;
     DcMotor armAngle;
     DcMotor armExtend;
 
-    double climberHighPos = 0.6;
-    double climberLowPos = 0.28;
-
-    double leftSidePos = 0.0;
-    double rightSidePos = 0.86;
-
-    Servo climberHigh;
-    Servo climberLow;
-
-    Servo leftSideServo;
-    Servo rightSideServo;
-
-    float avg_turns_per_loop = 0;
-    int num_queries = 0;
-
-    float req_speed = 0;
+    ServoValues servoValues;
+    SophServos sophServos;
 
     boolean record_motors;
     FileOutputStream fileStream;
     ObjectOutputStream objectStream;
 
-    String error;
-
-    LinearSpeadModifier linearSpeedMod;
+    ErrorManager error;
 
     public FreshSophK9TeleOp(boolean record)
     {
         record_motors = record;
 
-        linearSpeedMod = new LinearSpeadModifier();
-        linearSpeedMod.scale = -10;
+        if(record_motors) {
+            error = new ErrorManager("Driving OP mode with recording");
+        } else {
+            error = new ErrorManager("Driving OP mode without recording");
+        }
     }
 
     /*
@@ -140,13 +90,12 @@ public class FreshSophK9TeleOp extends OpMode {
         armAngle = hardwareMap.dcMotor.get("arm angle");
         armExtend = hardwareMap.dcMotor.get("arm extend");
 
-        armAngle.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
-        armExtend.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        //armAngle.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        //armExtend.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
 
-        climberHigh = hardwareMap.servo.get("climber high");
-        climberLow = hardwareMap.servo.get("climber low");
-        leftSideServo = hardwareMap.servo.get("left side servo");
-        rightSideServo = hardwareMap.servo.get("right side servo");
+        sophServos = new SophServos();
+        sophServos.initServos(hardwareMap);
+
     }
 
     @Override
@@ -160,12 +109,19 @@ public class FreshSophK9TeleOp extends OpMode {
             } catch (FileNotFoundException e) {
                 // Turn off recording
                 record_motors = false;
-                error = "File Not Found Exception";
+                error.setError("File Not Found Exception");
             } catch (IOException e) {
                 record_motors = false;
-                error = "IOException opening output stream";
+                error.setError("IOException opening output stream");
             }
         }
+
+        FtcRobotControllerActivity app = (FtcRobotControllerActivity) hardwareMap.appContext;
+        DefaultServoPositions positions = new DefaultServoPositions(app.context);
+
+        // Load default positions
+        servoValues = positions.read();
+        sophServos.setValues(servoValues);
     }
     /*
      * This method will be called repeatedly in a loop
@@ -200,8 +156,6 @@ public class FreshSophK9TeleOp extends OpMode {
             armExtendPow = (float) scaleInput(Range.clip(gamepad2.left_stick_y, -1, 1));
         }
 
-
-
         if(record_motors && objectStream != null)
         {
             try {
@@ -211,7 +165,7 @@ public class FreshSophK9TeleOp extends OpMode {
                 objectStream.writeFloat(armExtendPow);
             } catch (IOException e) {
                 closeStreams();
-                error = "IO Exception writing";
+                error.setError("IO Exception writing");
                 record_motors = false;
             }
         }
@@ -219,58 +173,40 @@ public class FreshSophK9TeleOp extends OpMode {
         {
             record_motors = false;
             closeStreams();
-            error = "RAN OUT OF TIME";
+            error.setError("RAN OUT OF TIME");
         }
 
         treadLeft.setPower(left);
         treadRight.setPower(right);
 
         armAngle.setPower(armAnglePow);
+        armExtend.setPower(armExtendPow);
 
-        linearSpeedMod.reqSpeed = armExtendPow;
+        // Adjust servo values
+        if(gamepad1.dpad_up) servoValues.climberHighPos = Range.clip(servoValues.climberHighPos + .01, 0, 1);
+        if(gamepad1.dpad_down) servoValues.climberHighPos = Range.clip(servoValues.climberHighPos - .01, 0, 1);
+        if(gamepad1.dpad_right) servoValues.climberLowPos = Range.clip(servoValues.climberLowPos + .01, 0, 1);
+        if(gamepad1.dpad_left) servoValues.climberLowPos = Range.clip(servoValues.climberLowPos - .01, 0, 1);
 
-        linearSpeedMod.lastPosition = linearSpeedMod.curPosition;
-        linearSpeedMod.curPosition = armExtend.getCurrentPosition();
+        if(gamepad2.dpad_up) servoValues.rightSidePos = Range.clip(servoValues.rightSidePos + .01, 0, 1);
+        if(gamepad2.dpad_down) servoValues.rightSidePos = Range.clip(servoValues.rightSidePos - .01, 0, 1);
+        if(gamepad2.dpad_right) servoValues.leftSidePos = Range.clip(servoValues.leftSidePos + .01, 0, 1);
+        if(gamepad2.dpad_left) servoValues.leftSidePos = Range.clip(servoValues.leftSidePos - .01, 0, 1);
 
-        linearSpeedMod.curPower = (float) armExtend.getPower();
-
-        armExtend.setPower(linearSpeedMod.getMotorPower(telemetry));
-
-        telemetry.addData("zz reqSpeed", linearSpeedMod.reqSpeed);
-        telemetry.addData("zz curPosition", linearSpeedMod.curPosition);
-        telemetry.addData("zz power used", armExtend.getPower());
-        telemetry.addData("zz curPower", linearSpeedMod.curPower);
-        telemetry.addData("zz lastPosition", linearSpeedMod.lastPosition);
-
-        if(gamepad1.dpad_up) climberHighPos = Range.clip(climberHighPos + .01, 0, 1);
-        if(gamepad1.dpad_down) climberHighPos = Range.clip(climberHighPos - .01, 0, 1);
-        if(gamepad1.dpad_right) climberLowPos = Range.clip(climberLowPos + .01, 0, 1);
-        if(gamepad1.dpad_left) climberLowPos = Range.clip(climberLowPos - .01, 0, 1);
-
-        if(gamepad2.dpad_up) rightSidePos = Range.clip(rightSidePos + .01, 0, 1);
-        if(gamepad2.dpad_down) rightSidePos = Range.clip(rightSidePos - .01, 0, 1);
-        if(gamepad2.dpad_right) leftSidePos = Range.clip(leftSidePos + .01, 0, 1);
-        if(gamepad2.dpad_left) leftSidePos = Range.clip(leftSidePos - .01, 0, 1);
-
-        climberHigh.setPosition(climberHighPos);
-        climberLow.setPosition(climberLowPos);
-
-        leftSideServo.setPosition(leftSidePos);
-        rightSideServo.setPosition(rightSidePos);
+        // Clip and adjust actual servos
+        sophServos.setValues(servoValues);
+        // Log them
+        servoValues.logValues(telemetry);
 
         // Ready to measure?
         telemetry.addData("left", left);
         telemetry.addData("right", right);
-        telemetry.addData("arm angle", armAnglePow);
+        telemetry.addData("arm angle", armAngle.getPower());
         telemetry.addData("arm extend", armExtend.getPower());
         telemetry.addData("arm angle position", armAngle.getCurrentPosition());
         telemetry.addData("arm extend position", armExtend.getCurrentPosition());
-        telemetry.addData("climber high", climberHighPos);
-        telemetry.addData("climber low", climberLowPos);
-        telemetry.addData("left servo pos", leftSidePos);
-        telemetry.addData("right servo pos", rightSidePos);
-        if(error != null) telemetry.addData("error", error);
-        else telemetry.addData("error", "NO error");
+
+        error.logError(telemetry);
 
         telemetry.addData("time", time);
     }

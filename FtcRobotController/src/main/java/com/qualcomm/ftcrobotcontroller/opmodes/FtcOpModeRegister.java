@@ -74,6 +74,10 @@ public class FtcOpModeRegister implements OpModeRegister {
     manager.register("FreshSophK9TeleOp **Record to Auto**", new FreshSophK9TeleOp(true));
     manager.register("FreshSophK9TeleOp **NO RECORD**", new FreshSophK9TeleOp(false));
 
+    manager.register("Choose default servo position", ChooseDefaultServoPosition.class);
+
+    manager.register("Test distance sensor", ReadDistance.class);
+
     /*
      * Uncomment any of the following lines if you want to register an op mode.
      */
