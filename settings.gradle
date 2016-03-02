@@ -1,5 +1,5 @@
 // FTC Apps
 include(':FtcRobotController')
-include(':app')
+include(':opencv')
 
 
