@@ -1,3 +1,4 @@
+include ':robotcameratest'
 // FTC Apps
 include(':FtcRobotController')
 include(':opencv')
