@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
 /**
  * Created by luke on 2/26/16.
  */
-public class ReadDistance extends OpMode {
+public class ReadColor extends OpMode {
 
     ColorSensor color;
 

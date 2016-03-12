@@ -76,7 +76,7 @@ public class FtcOpModeRegister implements OpModeRegister {
 
     manager.register("Choose default servo position", ChooseDefaultServoPosition.class);
 
-    manager.register("Test distance sensor", ReadDistance.class);
+    manager.register("Test color sensor", ReadColor.class);
 
     /*
      * Uncomment any of the following lines if you want to register an op mode.
