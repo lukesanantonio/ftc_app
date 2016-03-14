@@ -220,6 +220,7 @@ public class FtcRobotControllerActivity extends Activity {
 
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.cameraView);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+        mOpenCvCameraView.setCameraIndex(1);
     }
 
     @Override
