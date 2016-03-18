@@ -78,6 +78,11 @@ public class FtcOpModeRegister implements OpModeRegister {
 
     manager.register("Test color sensor", ReadColor.class);
 
+    manager.register("CameraOp", CameraOp.class);
+
+      manager.register("WhiteLineOp right", new WhiteLineOp(false));
+      manager.register("WhiteLineOp left", new WhiteLineOp(true));
+
     /*
      * Uncomment any of the following lines if you want to register an op mode.
      */
