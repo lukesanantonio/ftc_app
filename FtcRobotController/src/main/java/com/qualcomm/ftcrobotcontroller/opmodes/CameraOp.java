@@ -6,6 +6,8 @@ import com.qualcomm.ftcrobotcontroller.FtcRobotControllerActivity;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorController;
+import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 
 import android.util.Log;
 
@@ -29,6 +31,9 @@ class CameraOpListener implements CameraBridgeViewBase.CvCameraViewListener2 {
     Mat old;
 
     int width, height;
+    public double area;
+
+    public double[] color;
 
     public float leftWheelPower = 0.0f;
     public float rightWheelPower = 0.0f;
@@ -48,6 +53,8 @@ class CameraOpListener implements CameraBridgeViewBase.CvCameraViewListener2 {
 
         this.width = width;
         this.height = height;
+
+        this.color = new double[3];
     }
 
     @Override
@@ -61,12 +68,13 @@ class CameraOpListener implements CameraBridgeViewBase.CvCameraViewListener2 {
 
         Imgproc.cvtColor(inputFrame.rgba(), hsvMat, Imgproc.COLOR_RGB2HSV);
 
+        color = hsvMat.get(0,0);
 
         //double[] vals = hsvMat.get(0,0);
         //Log.i(TAG, "H: " + vals[0] + " S: " + vals[1] + " V: " + vals[2]);
         //return hsvMat;
 
-        Core.inRange(hsvMat, new Scalar(0xa4, 0x14, 0xe0), new Scalar(0xc0, 0x50, 0xff), redMat);
+        Core.inRange(hsvMat, new Scalar(160, 0, 200), new Scalar(200, 125, 0xff), redMat);
         //Core.bitwise_not(redMat, redMat);
 
         // Do the red mat
@@ -149,7 +157,7 @@ class CameraOpListener implements CameraBridgeViewBase.CvCameraViewListener2 {
             }
 
             // Print the area
-            Log.w(TAG, "area = " + maxArea);
+            area = maxArea;
             Imgproc.rectangle(redMat, boundingRect.tl(), boundingRect.br(), new Scalar(255, 0, 0), 1);
         }
         else
@@ -183,11 +191,12 @@ public class CameraOp extends OpMode {
     ServoValues servoValues;
     SophServos sophServos;
 
+    OpticalDistanceSensor distance;
+    ColorSensor color;
+
     @Override
     public void init() {
         listener = new CameraOpListener();
-
-        ((FtcRobotControllerActivity)hardwareMap.appContext).setCameraListener(listener);
 
         // Initialize everything
         // TODO: Abstract this!
@@ -206,6 +215,19 @@ public class CameraOp extends OpMode {
 
         sophServos = new SophServos();
         sophServos.initServos(hardwareMap);
+
+        distance = hardwareMap.opticalDistanceSensor.get("distance");
+        color = hardwareMap.colorSensor.get("color");
+    }
+
+    @Override
+    public void stop() {
+        ((FtcRobotControllerActivity)hardwareMap.appContext).setCameraListener(null);
+    }
+
+    @Override
+    public void start() {
+        ((FtcRobotControllerActivity)hardwareMap.appContext).setCameraListener(listener);
     }
 
     @Override
@@ -216,8 +238,8 @@ public class CameraOp extends OpMode {
         // TODO: When you get a race condition rethink this
         if(listener.considering) {
             synchronized (listener) {
-                treadLeft.setPower(listener.leftWheelPower);
-                treadRight.setPower(listener.rightWheelPower);
+                //treadLeft.setPower(listener.leftWheelPower);
+                //treadRight.setPower(listener.rightWheelPower);
             }
         }
         else {
@@ -230,5 +252,11 @@ public class CameraOp extends OpMode {
         telemetry.addData("considering", listener.considering);
         telemetry.addData("left", treadLeft.getPower());
         telemetry.addData("right", treadRight.getPower());
+        telemetry.addData("area", listener.area);
+        telemetry.addData("h", listener.color[0]);
+        telemetry.addData("s", listener.color[1]);
+        telemetry.addData("v", listener.color[2]);
+        telemetry.addData("distance", distance.getLightDetectedRaw());
+        telemetry.addData("color", color.argb());
     }
 }
