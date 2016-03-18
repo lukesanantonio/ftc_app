@@ -41,9 +41,6 @@ public class CameraTestActivity extends Activity implements CameraBridgeViewBase
     static final String TAG = "CameraTestActivity";
 
     Mat hsvMat;
-    Mat redMat;
-    Mat blueMat;
-    Mat old;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +54,7 @@ public class CameraTestActivity extends Activity implements CameraBridgeViewBase
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.HelloOpenCvView);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+        mOpenCvCameraView.setCameraIndex(1);
         mOpenCvCameraView.setCvCameraViewListener(this);
     }
 
@@ -96,4 +94,21 @@ public class CameraTestActivity extends Activity implements CameraBridgeViewBase
             mOpenCvCameraView.disableView();
     }
 
+    @Override
+    public void onCameraViewStarted(int width, int height) {
+        hsvMat = new Mat();
+    }
+
+    @Override
+    public void onCameraViewStopped() {
+    }
+
+    @Override
+    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame frame)
+    {
+        Imgproc.cvtColor(frame.rgba(), hsvMat, Imgproc.COLOR_RGB2HSV);
+        double[] color = hsvMat.get(0,0);
+        Log.w(TAG, "h: " + color[0] + " s: " + color[1] + " v: " + color[2]);
+        return hsvMat;
+    }
 }
