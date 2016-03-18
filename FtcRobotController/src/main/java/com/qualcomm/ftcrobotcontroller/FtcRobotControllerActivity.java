@@ -249,6 +249,7 @@ public class FtcRobotControllerActivity extends Activity {
     if (USE_DEVICE_EMULATION) { HardwareFactory.enableDeviceEmulation(); }
 
     mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.cameraView);
+    mOpenCvCameraView.setCameraIndex(1);
     mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
   }
 
