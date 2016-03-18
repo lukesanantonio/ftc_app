@@ -39,9 +39,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     tools:context=".FtcRobotControllerActivity"
     android:focusable="true"
     android:id="@+id/entire_screen"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:weightSum="1">
 
   <!-- black bar on top -->
+
   <RelativeLayout
     android:id="@+id/top_bar"
     android:layout_width="fill_parent"
@@ -87,17 +89,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <!-- end of black bar -->
 
   <include layout="@layout/header"
-           android:id="@+id/included_header"/>
+           android:id="@+id/included_header" />
 
   <RelativeLayout
     android:id="@+id/RelativeLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="115dp"
     android:keepScreenOn="true"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin" >
+    android:paddingTop="@dimen/activity_vertical_margin">
 
     <TextView
       android:id="@+id/textWifiDirectStatus"
@@ -148,12 +150,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       android:layout_marginBottom="10dp"
       android:text="" />
 
-    <org.opencv.android.JavaCameraView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:visibility="gone"
-        android:id="@+id/cameraView"
-        opencv:show_fps="true"
-        opencv:camera_id="any" />
   </RelativeLayout>
+
+  <org.opencv.android.JavaCameraView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:visibility="visible"
+      android:id="@+id/cameraView"
+      opencv:show_fps="true"
+      opencv:camera_id="any"
+      android:layout_gravity="bottom" />
+
 </LinearLayout>
