@@ -140,7 +140,9 @@ public class FtcRobotControllerActivity extends Activity {
   };
   // Sets the listener which I think is going to run in parallel
   public void setCameraListener(CameraBridgeViewBase.CvCameraViewListener2 listen) {
+    mOpenCvCameraView.disableView();
     mOpenCvCameraView.setCvCameraViewListener(listen);
+    mOpenCvCameraView.enableView();
   }
 
 
