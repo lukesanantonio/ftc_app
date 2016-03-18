@@ -122,8 +122,6 @@ class CameraOpListener implements CameraBridgeViewBase.CvCameraViewListener2 {
             // We got the center point.
             // Find out where it is in the range [-1,1] where 0 is right in the center.
 
-            Point p;
-
             p.x /= (width / 2.0) - 1.0;
             p.y /= (height / 2.0) - 1.0;
 
