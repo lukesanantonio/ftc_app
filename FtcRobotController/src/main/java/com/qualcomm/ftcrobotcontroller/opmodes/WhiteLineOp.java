@@ -144,7 +144,7 @@ public class WhiteLineOp extends OpMode {
                     treadLeft.setPower(1.f);
                     treadRight.setPower(-1.f);
                 }
-                if(color.alpha() > 12) {
+                if(color.alpha() >= 9) {
                     mode = WhiteLineMode.Moving;
                     time_at_start = time;
                 }
@@ -164,9 +164,9 @@ public class WhiteLineOp extends OpMode {
                 treadLeft.setPower(-0.5f);
                 treadRight.setPower(-0.5f);
 
-                armAngle.setTargetPosition(-700);
+                armAngle.setTargetPosition(-500);
                 armAngle.setPower(-1.0f);
-                if(armAngle.getCurrentPosition() < -690)
+                if(armAngle.getCurrentPosition() < -490)
                 {
                     mode = WhiteLineMode.Extending;
                     time_at_start = time;
@@ -174,9 +174,9 @@ public class WhiteLineOp extends OpMode {
                 break;
             case Extending:
                 telemetry.addData("doing", "extending");
-                armExtend.setTargetPosition(6*1440);
+                armExtend.setTargetPosition(8*1440);
                 armExtend.setPower(1.0f);
-                if(armExtend.getCurrentPosition() > (6*1440) - 10)
+                if(armExtend.getCurrentPosition() > (8*1440) - 10)
                 {
                     mode = WhiteLineMode.Done;
                     time_at_start = time;
