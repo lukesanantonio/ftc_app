@@ -38,6 +38,30 @@ public class WhiteLineOp extends OpMode {
     double time_at_start = 0.0;
     double time_to_move = 0.0;
 
+    private static final int ENCODER_THRESHOLD = 10;
+
+    private static final float TURNING_POWER = 1.0f;
+
+    private static final float ARM_ANGLE_TARGET_POWER = -1.0f;
+    private static final int ARM_ANGLE_TARGET_POSITION = -500;
+
+    private static final float ARM_ANGLE_RESET_POWER = 1.0f;
+    private static final int ARM_ANGLE_RESET_POSITION = 0;
+
+    private static final float ARM_EXTEND_TARGET_POWER = 1.0f;
+    private static final int ARM_EXTEND_TARGET_POSITION = 9*1440;
+
+    private static final float ARM_EXTEND_RESET_POWER = -1.0f;
+    private static final int ARM_EXTEND_RESET_POSITION = 0;
+
+    private static final float MOTOR_POWER = -0.5f;
+    private static final float STOP_POWER = 0.0f;
+
+    private static final int DISTANCE_MINIMUM = 2;
+
+    private static final int COLOR_ON_WHITE_THRESHOLD = 9;
+    private static final int COLOR_OFF_WHITE_THRESHOLD = 2;
+
     DcMotor treadLeft;
     DcMotor treadRight;
 
@@ -105,18 +129,18 @@ public class WhiteLineOp extends OpMode {
                 break;
             case Searching:
                 telemetry.addData("doing", "searching");
-                treadLeft.setPower(-0.5f);
-                treadRight.setPower(-0.5f);
-                if(color.alpha() >= 9) {
+                treadLeft.setPower(MOTOR_POWER);
+                treadRight.setPower(MOTOR_POWER);
+                if(color.alpha() >= COLOR_ON_WHITE_THRESHOLD) {
                     mode = WhiteLineMode.Moving_Beyond;
                     time_at_start = time;
                 }
                 break;
             case Moving_Beyond:
                 telemetry.addData("doing", "moving beyond");
-                treadLeft.setPower(-0.5f);
-                treadRight.setPower(-0.5f);
-                if(color.alpha() < 3) {
+                treadLeft.setPower(MOTOR_POWER);
+                treadRight.setPower(MOTOR_POWER);
+                if(color.alpha() <= COLOR_OFF_WHITE_THRESHOLD) {
                     mode = WhiteLineMode.Moving_Timed;
                     time_to_move = time - time_at_start;
                     time_at_start = time;
@@ -124,8 +148,8 @@ public class WhiteLineOp extends OpMode {
                 break;
             case Moving_Timed:
                 telemetry.addData("doing", "moving timed");
-                treadLeft.setPower(-0.5f);
-                treadRight.setPower(-0.5f);
+                treadLeft.setPower(MOTOR_POWER);
+                treadRight.setPower(MOTOR_POWER);
                 if(time - time_at_start > time_to_move)
                 {
                     mode = WhiteLineMode.Orienting;
@@ -136,24 +160,24 @@ public class WhiteLineOp extends OpMode {
                 telemetry.addData("doing", "orienting");
                 if(turning == Turn.Left)
                 {
-                    treadLeft.setPower(1.f);
-                    treadRight.setPower(-1.f);
+                    treadLeft.setPower(-TURNING_POWER);
+                    treadRight.setPower(TURNING_POWER);
                 }
                 else
                 {
-                    treadLeft.setPower(1.f);
-                    treadRight.setPower(-1.f);
+                    treadLeft.setPower(TURNING_POWER);
+                    treadRight.setPower(-TURNING_POWER);
                 }
-                if(color.alpha() >= 9) {
+                if(color.alpha() >= COLOR_ON_WHITE_THRESHOLD) {
                     mode = WhiteLineMode.Moving;
                     time_at_start = time;
                 }
                 break;
             case Moving:
                 telemetry.addData("doing", "moving");
-                treadLeft.setPower(-0.5f);
-                treadRight.setPower(-0.5f);
-                if(distance.getLightDetectedRaw() > 1)
+                treadLeft.setPower(MOTOR_POWER);
+                treadRight.setPower(MOTOR_POWER);
+                if(distance.getLightDetectedRaw() >= DISTANCE_MINIMUM)
                 {
                     mode = WhiteLineMode.Lifting;
                     time_at_start = time;
@@ -161,12 +185,12 @@ public class WhiteLineOp extends OpMode {
                 break;
             case Lifting:
                 telemetry.addData("doing", "lifting");
-                treadLeft.setPower(-0.5f);
-                treadRight.setPower(-0.5f);
+                treadLeft.setPower(MOTOR_POWER);
+                treadRight.setPower(MOTOR_POWER);
 
-                armAngle.setTargetPosition(-500);
-                armAngle.setPower(-1.0f);
-                if(armAngle.getCurrentPosition() < -490)
+                armAngle.setTargetPosition(ARM_ANGLE_TARGET_POSITION);
+                armAngle.setPower(ARM_ANGLE_TARGET_POWER);
+                if(Math.abs(ARM_ANGLE_TARGET_POSITION - armAngle.getCurrentPosition()) < ENCODER_THRESHOLD)
                 {
                     mode = WhiteLineMode.Extending;
                     time_at_start = time;
@@ -174,9 +198,9 @@ public class WhiteLineOp extends OpMode {
                 break;
             case Extending:
                 telemetry.addData("doing", "extending");
-                armExtend.setTargetPosition(8*1440);
-                armExtend.setPower(1.0f);
-                if(armExtend.getCurrentPosition() > (8*1440) - 10)
+                armExtend.setTargetPosition(ARM_EXTEND_TARGET_POSITION);
+                armExtend.setPower(ARM_EXTEND_TARGET_POWER);
+                if(Math.abs(ARM_EXTEND_TARGET_POSITION - armExtend.getCurrentPosition()) < ENCODER_THRESHOLD)
                 {
                     mode = WhiteLineMode.Done;
                     time_at_start = time;
@@ -184,8 +208,8 @@ public class WhiteLineOp extends OpMode {
             case Done:
             default:
                 telemetry.addData("doing", "done");
-                treadLeft.setPower(0.0f);
-                treadRight.setPower(0.0f);
+                treadLeft.setPower(STOP_POWER);
+                treadRight.setPower(STOP_POWER);
                 break;
         }
         telemetry.addData("color", color.alpha());
