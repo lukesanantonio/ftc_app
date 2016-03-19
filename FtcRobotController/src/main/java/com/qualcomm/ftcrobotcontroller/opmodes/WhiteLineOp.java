@@ -28,6 +28,8 @@ enum WhiteLineMode
     Moving,
     Lifting,
     Extending,
+    Retracting,
+    Lowering,
     Done
 }
 
@@ -174,6 +176,11 @@ public class WhiteLineOp extends OpMode {
                 }
                 break;
             case Moving:
+                // Maybe add a hard limit on the time we can wait for the distance sensor.
+                // Or not, IMO the distance sensor probably won't fail and more likely it will make
+                // the robot drop the climbers unnecessarily, screwing us over during the driver
+                // period.
+
                 telemetry.addData("doing", "moving");
                 treadLeft.setPower(MOTOR_POWER);
                 treadRight.setPower(MOTOR_POWER);
@@ -185,6 +192,8 @@ public class WhiteLineOp extends OpMode {
                 break;
             case Lifting:
                 telemetry.addData("doing", "lifting");
+
+                // Do we need this?
                 treadLeft.setPower(MOTOR_POWER);
                 treadRight.setPower(MOTOR_POWER);
 
@@ -202,9 +211,35 @@ public class WhiteLineOp extends OpMode {
                 armExtend.setPower(ARM_EXTEND_TARGET_POWER);
                 if(Math.abs(ARM_EXTEND_TARGET_POSITION - armExtend.getCurrentPosition()) < ENCODER_THRESHOLD)
                 {
+                    mode = WhiteLineMode.Retracting;
+                    time_at_start = time;
+                }
+                break;
+            case Retracting:
+                telemetry.addData("doing", "retracting");
+                armExtend.setTargetPosition(ARM_EXTEND_RESET_POSITION);
+                armExtend.setPower(ARM_EXTEND_RESET_POWER);
+                if(Math.abs(ARM_EXTEND_RESET_POSITION - armExtend.getCurrentPosition()) < ENCODER_THRESHOLD)
+                {
+                    mode = WhiteLineMode.Lowering;
+                    time_at_start = time;
+                }
+                break;
+            case Lowering:
+                telemetry.addData("doing", "lowering");
+
+                // Why is this here?
+                //treadLeft.setPower(MOTOR_POWER);
+                //treadRight.setPower(MOTOR_POWER);
+
+                armAngle.setTargetPosition(ARM_ANGLE_RESET_POSITION);
+                armAngle.setPower(ARM_ANGLE_RESET_POWER);
+                if(Math.abs(ARM_ANGLE_RESET_POSITION - armAngle.getCurrentPosition()) < ENCODER_THRESHOLD)
+                {
                     mode = WhiteLineMode.Done;
                     time_at_start = time;
                 }
+                break;
             case Done:
             default:
                 telemetry.addData("doing", "done");
