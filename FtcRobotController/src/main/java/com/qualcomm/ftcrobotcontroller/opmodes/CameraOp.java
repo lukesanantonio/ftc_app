@@ -33,7 +33,7 @@ class CameraOpListener implements CameraBridgeViewBase.CvCameraViewListener2 {
     int width, height;
     public double area;
 
-    public double[] color;
+    public double[] color = new double[3];
 
     public float leftWheelPower = 0.0f;
     public float rightWheelPower = 0.0f;
