@@ -33,6 +33,7 @@ enum WhiteLineMode
     Extending,
     Retracting,
     Lowering,
+    Backing,
     Done
 }
 
@@ -48,24 +49,29 @@ public class WhiteLineOp extends OpMode {
     private static final float TURNING_POWER = 1.0f;
 
     private static final float ARM_ANGLE_TARGET_POWER = -1.0f;
-    private static final int ARM_ANGLE_TARGET_POSITION = -500;
+    private static final int ARM_ANGLE_TARGET_POSITION = -380;
 
     private static final float ARM_ANGLE_RESET_POWER = 1.0f;
     private static final int ARM_ANGLE_RESET_POSITION = 0;
 
     private static final float ARM_EXTEND_TARGET_POWER = 1.0f;
-    private static final int ARM_EXTEND_TARGET_POSITION = 9*1440;
+    private static final int ARM_EXTEND_TARGET_POSITION = 8*1440;
 
     private static final float ARM_EXTEND_RESET_POWER = -1.0f;
     private static final int ARM_EXTEND_RESET_POSITION = 0;
 
-    private static final float MOTOR_POWER = -0.5f;
+    // TODO: Maybe increase the robot power?
+    private static final float MOTOR_POWER = -1.0f;
     private static final float STOP_POWER = 0.0f;
 
-    private static final int DISTANCE_MINIMUM = 2;
+    // TODO: Possibly change this to 5 and see if that works better.
+    private static final int DISTANCE_MINIMUM = 5;
 
     private static final int COLOR_ON_WHITE_THRESHOLD = 9;
     private static final int COLOR_OFF_WHITE_THRESHOLD = 2;
+
+    private static final double BACKING_UP_POWER = 1.0f;
+    private static final double BACKING_UP_TIME = 4.0f;
 
     DcMotor treadLeft;
     DcMotor treadRight;
@@ -239,13 +245,21 @@ public class WhiteLineOp extends OpMode {
                     mode = WhiteLineMode.Lifting;
                     time_at_start = time;
                 }
+                if(time - time_at_start > 3.0f)
+                {
+                    mode = WhiteLineMode.Backing;
+                    time_at_start = time;
+                }
                 break;
             case Lifting:
                 telemetry.addData("doing", "lifting");
 
                 // Do we need this?
-                treadLeft.setPower(MOTOR_POWER);
-                treadRight.setPower(MOTOR_POWER);
+                treadLeft.setPower(STOP_POWER);
+                treadRight.setPower(STOP_POWER);
+
+                // We can pretty much back off unless we are here, so make sure we are still in
+                // the allotted time limit.
 
                 armAngle.setTargetPosition(ARM_ANGLE_TARGET_POSITION);
                 armAngle.setPower(ARM_ANGLE_TARGET_POWER);
@@ -261,7 +275,8 @@ public class WhiteLineOp extends OpMode {
                 armExtend.setPower(ARM_EXTEND_TARGET_POWER);
                 if(Math.abs(ARM_EXTEND_TARGET_POSITION - armExtend.getCurrentPosition()) < ENCODER_THRESHOLD)
                 {
-                    mode = WhiteLineMode.Retracting;
+                    // Change to WhiteLineMode.Backing if we want to just back up right away.
+                    mode = WhiteLineMode.Backing;
                     time_at_start = time;
                 }
                 break;
@@ -285,6 +300,17 @@ public class WhiteLineOp extends OpMode {
                 armAngle.setTargetPosition(ARM_ANGLE_RESET_POSITION);
                 armAngle.setPower(ARM_ANGLE_RESET_POWER);
                 if(Math.abs(ARM_ANGLE_RESET_POSITION - armAngle.getCurrentPosition()) < ENCODER_THRESHOLD)
+                {
+                    mode = WhiteLineMode.Backing;
+                    time_at_start = time;
+                }
+                break;
+            case Backing:
+                // If it hasn't been 10 seconds it is very unsafe to backup.
+                if(time < 10.0f) break;
+                treadLeft.setPower(BACKING_UP_POWER);
+                treadRight.setPower(BACKING_UP_POWER);
+                if(time - time_at_start >= BACKING_UP_TIME)
                 {
                     mode = WhiteLineMode.Done;
                     time_at_start = time;
