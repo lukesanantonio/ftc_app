@@ -80,8 +80,20 @@ public class FtcOpModeRegister implements OpModeRegister {
 
     manager.register("CameraOp", CameraOp.class);
 
-      manager.register("WhiteLineOp right", new WhiteLineOp(false));
-      manager.register("WhiteLineOp left", new WhiteLineOp(true));
+      manager.register("WhiteLineOp right", new WhiteLineOp(false, 0.0f));
+      manager.register("WhiteLineOp left", new WhiteLineOp(true, 0.0f));
+
+      manager.register("WhiteLineOp right 2", new WhiteLineOp(false, 2.0f));
+      manager.register("WhiteLineOp left 2", new WhiteLineOp(true, 2.0f));
+
+      manager.register("WhiteLineOp right 10", new WhiteLineOp(false, 10.0f));
+      manager.register("WhiteLineOp left 10", new WhiteLineOp(true, 10.0f));
+
+      manager.register("WhiteLineOp right 13", new WhiteLineOp(false, 13.0f));
+      manager.register("WhiteLineOp left 13", new WhiteLineOp(true, 13.0f));
+
+      manager.register("WhiteLineOp right 15", new WhiteLineOp(false, 15.0f));
+      manager.register("WhiteLineOp left 15", new WhiteLineOp(true, 15.0f));
 
     /*
      * Uncomment any of the following lines if you want to register an op mode.

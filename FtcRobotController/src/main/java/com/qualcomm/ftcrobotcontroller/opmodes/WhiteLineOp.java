@@ -20,6 +20,7 @@ enum Turn
 }
 enum WhiteLineMode
 {
+    Begin,
     Start,
     Searching,
     Moving_Beyond,
@@ -76,7 +77,9 @@ public class WhiteLineOp extends OpMode {
     OpticalDistanceSensor distance;
     ColorSensor color;
 
-    WhiteLineOp(boolean left)
+    double time_delay;
+
+    WhiteLineOp(boolean left, double delay)
     {
         if(left)
         {
@@ -86,6 +89,8 @@ public class WhiteLineOp extends OpMode {
         {
             turning = Turn.Right;
         }
+
+        time_delay = delay;
     }
 
     @Override
@@ -118,16 +123,23 @@ public class WhiteLineOp extends OpMode {
 
     @Override
     public void start() {
-        mode = WhiteLineMode.Start;
+        mode = WhiteLineMode.Begin;
     }
 
     @Override
     public void loop() {
         switch(mode)
         {
-            case Start:
-                mode = WhiteLineMode.Searching;
+            case Begin:
+                resetStartTime();
+                mode = WhiteLineMode.Start;
                 time_at_start = time;
+                break;
+            case Start:
+                if(time >= time_delay) {
+                    mode = WhiteLineMode.Searching;
+                    time_at_start = time;
+                }
                 break;
             case Searching:
                 telemetry.addData("doing", "searching");
@@ -250,5 +262,6 @@ public class WhiteLineOp extends OpMode {
         telemetry.addData("color", color.alpha());
         telemetry.addData("distance", distance.getLightDetectedRaw());
         telemetry.addData("time_at_start", time_at_start);
+        telemetry.addData("time", time);
     }
 }
