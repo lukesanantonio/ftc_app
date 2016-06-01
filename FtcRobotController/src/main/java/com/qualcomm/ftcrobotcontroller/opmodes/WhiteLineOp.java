@@ -26,6 +26,8 @@ enum WhiteLineMode
     Moving_Beyond,
     Moving_Timed,
     Orienting,
+    Orienting_Further,
+    Orienting_Back,
     Moving,
     Lifting,
     Extending,
@@ -183,6 +185,42 @@ public class WhiteLineOp extends OpMode {
                     treadRight.setPower(-TURNING_POWER);
                 }
                 if(color.alpha() >= COLOR_ON_WHITE_THRESHOLD) {
+                    mode = WhiteLineMode.Orienting_Further;
+                    time_at_start = time;
+                }
+                break;
+            case Orienting_Further:
+                telemetry.addData("doing", "orienting further");
+                if(turning == Turn.Left)
+                {
+                    treadLeft.setPower(-TURNING_POWER);
+                    treadRight.setPower(TURNING_POWER);
+                }
+                else
+                {
+                    treadLeft.setPower(TURNING_POWER);
+                    treadRight.setPower(-TURNING_POWER);
+                }
+                if(color.alpha() <= COLOR_OFF_WHITE_THRESHOLD) {
+                    mode = WhiteLineMode.Orienting_Back;
+                    time_at_start = time;
+                    time_to_move = time - time_at_start;
+
+                }
+                break;
+            case Orienting_Back:
+                telemetry.addData("doing", "orienting back");
+                if(turning == Turn.Left)
+                {
+                    treadLeft.setPower(TURNING_POWER);
+                    treadRight.setPower(-TURNING_POWER);
+                }
+                else
+                {
+                    treadLeft.setPower(-TURNING_POWER);
+                    treadRight.setPower(TURNING_POWER);
+                }
+                if(time - time_at_start > time_to_move / 2) {
                     mode = WhiteLineMode.Moving;
                     time_at_start = time;
                 }
