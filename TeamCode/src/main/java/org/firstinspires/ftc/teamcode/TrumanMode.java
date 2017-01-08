@@ -8,10 +8,6 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
-/**
- * Created by luke on 11/19/16.
- */
-
 @TeleOp
 public class TrumanMode extends OpMode {
 
@@ -26,7 +22,6 @@ public class TrumanMode extends OpMode {
 
     CRServo sSlide;
     Servo sLeft;
-    Servo sRight;
 
     @Override
     public void init()
