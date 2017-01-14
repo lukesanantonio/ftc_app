@@ -51,6 +51,8 @@ public class TrumanOriginalAutoMode extends OpMode {
         ShootingBalls,
         RampDownShootStageOne,
         RampDownShootStageTwo,
+        DrivingTowardsBall,
+        BackingFromBall,
         Done
     }
 
@@ -238,6 +240,23 @@ public class TrumanOriginalAutoMode extends OpMode {
                 } else {
                     mPropRight.setPower(0.0f);
                     mPropLeft.setPower(0.0f);
+                    changeState(State.DrivingTowardsBall);
+                }
+                break;
+            case DrivingTowardsBall:
+                telemetry.addData("doing", "driving towards ball");
+                setMotorsBackward();
+                if (time - time_at_start >= TIME_TOWARDS_BALL) {
+                    setMotorsStopped();
+                    changeState(State.BackingFromBall);
+                }
+                break;
+            case BackingFromBall:
+                telemetry.addData("doing", "backing from ball");
+                setMotorsForward();
+                if (time - time_at_start >= TIME_FROM_BALL)
+                {
+                    setMotorsStopped();
                     changeState(State.Done);
                 }
                 break;
