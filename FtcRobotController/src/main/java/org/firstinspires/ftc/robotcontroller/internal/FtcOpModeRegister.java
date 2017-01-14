@@ -37,7 +37,10 @@ import com.qualcomm.robotcore.eventloop.opmode.OpModeRegister;
 import com.qualcomm.robotcore.eventloop.opmode.AnnotatedOpModeRegistrar;
 import org.firstinspires.ftc.robotcontroller.external.samples.ConceptNullOp;
 
+import org.firstinspires.ftc.teamcode.AndrewAutoMode;
 import org.firstinspires.ftc.teamcode.TrumanAutoMode;
+import org.firstinspires.ftc.teamcode.TrumanOriginalAutoMode;
+
 /**
  * {@link FtcOpModeRegister} is responsible for registering opmodes for use in an FTC game.
  * @see #register(OpModeManager)
@@ -81,8 +84,19 @@ public class FtcOpModeRegister implements OpModeRegister {
         manager.register("T-Auto (Right,Red,0 Delay)", new TrumanAutoMode(
                 TrumanAutoMode.Turn.Right, TrumanAutoMode.Color.Red, 0.0f
         ));
-        manager.register("Auto (Truman,Left,0 Delay)", new TrumanAutoMode(
+        manager.register("T-Auto (Left,,Blue,0 Delay)", new TrumanAutoMode(
                 TrumanAutoMode.Turn.Left, TrumanAutoMode.Color.Blue, 0.0f
+        ));
+
+        manager.register("A-Auto (Right,Red,0 Delay)", new AndrewAutoMode(
+                AndrewAutoMode.Turn.Right, AndrewAutoMode.Color.Red, 0.0f
+        ));
+        manager.register("A-Auto (Left,Blue,0 Delay)", new AndrewAutoMode(
+                AndrewAutoMode.Turn.Left, AndrewAutoMode.Color.Blue, 0.0f
+        ));
+
+        manager.register("Original Truman", new TrumanOriginalAutoMode(
+                TrumanOriginalAutoMode.Turn.Left, TrumanOriginalAutoMode.Color.Blue, 0.0f
         ));
     }
 }

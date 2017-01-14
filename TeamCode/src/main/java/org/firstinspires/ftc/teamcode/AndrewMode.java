@@ -31,7 +31,7 @@ public class AndrewMode extends OpMode {
     private State state = State.Resting;
     private double time_spin_started = 0.0f;
 
-    private static double LAUNCH_SPINNING_TIME = .3f;
+    private static double LAUNCH_SPINNING_TIME = .1f;
 
     /*
      * Code to run when the op mode is first enabled goes here
@@ -67,7 +67,7 @@ public class AndrewMode extends OpMode {
 
         // The spinner controlled by the joystick needs to be a lot slower.
         if (state == State.Resting) {
-            spinner.setPower(gamepad2.right_stick_y * .5f);
+            spinner.setPower(gamepad2.right_stick_y + gamepad2.left_stick_y * .25f);
         }
 
         // Run it at full speed for a short time with a button
@@ -78,7 +78,7 @@ public class AndrewMode extends OpMode {
 
         if (state == State.Spinning) {
             if (time - time_spin_started < LAUNCH_SPINNING_TIME) {
-                spinner.setPower(1.0f);
+                spinner.setPower(-1.0f);
             } else {
                 spinner.setPower(0.0f);
                 state = State.Resting;

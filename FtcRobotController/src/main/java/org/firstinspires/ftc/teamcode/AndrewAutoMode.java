@@ -9,7 +9,7 @@ public class AndrewAutoMode extends OpMode {
     // Constants
     private static final float MOTOR_POWER = 1.0f;
 
-    private static final double TIME_TOWARDS_BALL = 4.0f;
+    private static final double TIME_TOWARDS_BALL = 1.0f;
     private static final double TIME_TURNING = 0.7f;
 
     private static final int HUE_DIFFERENCE_THRESHOLD = 10;
@@ -77,8 +77,8 @@ public class AndrewAutoMode extends OpMode {
         mBackRight = hardwareMap.dcMotor.get("back right");
         mBackLeft = hardwareMap.dcMotor.get("back left");
 
-        mBackLeft.setDirection(DcMotor.Direction.REVERSE);
-        mFrontLeft.setDirection(DcMotor.Direction.REVERSE);
+        mFrontRight.setDirection(DcMotor.Direction.REVERSE);
+        mBackRight.setDirection(DcMotor.Direction.REVERSE);
 
         mButtonPusher = hardwareMap.dcMotor.get("button pusher");
 
@@ -138,21 +138,26 @@ public class AndrewAutoMode extends OpMode {
     public void loop() {
         switch (state) {
             case Begin:
+                telemetry.addData("doing", "begin");
                 resetStartTime();
                 changeState(State.DrivingTowardsBall);
                 break;
             case DrivingTowardsBall:
+                telemetry.addData("doing", "driving towards ball");
                 setMotorsForward();
                 if (time - time_at_start >= TIME_TOWARDS_BALL) {
                     changeState(State.DrivingBack);
                 }
+                break;
             case DrivingBack:
+                telemetry.addData("doing", "driving back");
                 setMotorsBackward();
                 if (time - time_at_start >= TIME_TOWARDS_BALL) {
-                    changeState(State.TurningTowardsWall);
+                    changeState(State.Done);
                 }
                 break;
             case TurningTowardsWall:
+                telemetry.addData("doing", "turning towards wall");
                 if (turning == Turn.Right) {
                     setTurnRight();
                 } else {
@@ -164,6 +169,7 @@ public class AndrewAutoMode extends OpMode {
                 }
                 break;
             case TurningToDriveByGhost:
+                telemetry.addData("doing", "turning to drive by ghost");
                 if (turning == Turn.Right) {
                     setTurnLeft();
                 } else {
@@ -179,6 +185,7 @@ public class AndrewAutoMode extends OpMode {
                 }
                 break;
             case DrivingByGhost:
+                telemetry.addData("doing", "driving by ghost");
                 // Wait for changes in the color sensor?
                 if (Math.abs(frontColor.argb() - hue) > HUE_DIFFERENCE_THRESHOLD) {
                     // Something happened, we probably are now side-by-side
@@ -188,6 +195,7 @@ public class AndrewAutoMode extends OpMode {
 
                 break;
             case FiguringOutColor:
+                telemetry.addData("doing", "figuring out color");
                 firstColorGuess = guessFrontColor();
                 if (firstColorGuess == seekColor) {
                     // We found our color, go for the button
@@ -200,12 +208,14 @@ public class AndrewAutoMode extends OpMode {
                 }
                 break;
             case WaitingForColorChange:
+                telemetry.addData("doing", "waiting for color change");
                 if (Math.abs(frontColor.argb() - hue) > HUE_DIFFERENCE_THRESHOLD) {
                     // The hue changed now, look at the color again
                     changeState(State.FiguringOutColor);
                 }
                 break;
             case WaitingForButton:
+                telemetry.addData("doing", "waiting for button");
                 if (Math.abs(frontColor.argb() - hue) > HUE_DIFFERENCE_THRESHOLD) {
                     // The hue changed now, that must be the button
                     setMotorsStopped();
@@ -213,6 +223,7 @@ public class AndrewAutoMode extends OpMode {
                 }
                 break;
             case PushingButton:
+                telemetry.addData("doing", "pushing button");
                 // Activate the button pusher
                 mButtonPusher.setPower(BUTTON_PUSHER_POWER);
                 if (time - time_at_start >= BUTTON_PUSHER_TIME) {

@@ -44,6 +44,8 @@ public class TrumanMode extends OpMode {
     @Override
     public void loop()
     {
+
+
         mBackLeft.setPower(gamepad1.left_stick_y);
         mFrontLeft.setPower(gamepad1.left_stick_y);
 
