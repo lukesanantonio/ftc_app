@@ -23,8 +23,8 @@ public class TrumanMode extends OpMode {
     Servo sSlide;
     float slidePosition;
 
-    private static float SERVO_BOTTOM = .44f;
-    private static float SERVO_TOP = .77f;
+    private static float SERVO_BOTTOM = .33f;
+    private static float SERVO_TOP = .70f;
 
     @Override
     public void init()
@@ -74,8 +74,9 @@ public class TrumanMode extends OpMode {
         }
         telemetry.addData("leftstep", leftstep);
 
-        slidePosition += gamepad2.left_stick_y / 20.0f;
-        sSlide.setPosition(Range.clip(slidePosition, SERVO_BOTTOM, SERVO_TOP));
+        slidePosition += gamepad2.left_stick_y / 50.0f;
+        slidePosition = Range.clip(slidePosition, SERVO_BOTTOM, SERVO_TOP);
+        sSlide.setPosition(slidePosition);
         telemetry.addData("sSlide power", sSlide.getPosition());
         // top .77
         // bottom .44
