@@ -1,88 +1,56 @@
-/* Copyright (C) 2015 Luke San Antonio
- * All rights reserved.
-*/
-
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.Range;
 
-/**
- * TeleOp Mode
- * <p>
- * Enables control of the robot via the gamepad
- */
-@TeleOp(name = "Andrew Mode")
+@TeleOp
 public class AndrewMode extends OpMode {
 
-    private DcMotor frontLeft;
-    private DcMotor backLeft;
-    private DcMotor frontRight;
-    private DcMotor backRight;
-    private DcMotor spinner;
+    DcMotor mFrontRight;
+    DcMotor mFrontLeft;
+    DcMotor mBackRight;
+    DcMotor mBackLeft;
 
-    enum State {
-        Resting,
-        Spinning,
-    }
+    DcMotor mPropLeft;
+    DcMotor mPropRight;
 
-    private State state = State.Resting;
-    private double time_spin_started = 0.0f;
-
-    private static double LAUNCH_SPINNING_TIME = .1f;
-
-    /*
-     * Code to run when the op mode is first enabled goes here
-     *
-     * @see com.qualcomm.robotcore.eventloop.opmode.OpMode#start()
-     */
     @Override
-    public void init() {
-        frontLeft = hardwareMap.dcMotor.get("front left");
-        backLeft = hardwareMap.dcMotor.get("back left");
-        frontRight = hardwareMap.dcMotor.get("front right");
-        backRight = hardwareMap.dcMotor.get("back right");
+    public void init()
+    {
+        mFrontRight = hardwareMap.dcMotor.get("front right");
+        mFrontLeft = hardwareMap.dcMotor.get("front left");
+        mBackRight = hardwareMap.dcMotor.get("back right");
+        mBackLeft = hardwareMap.dcMotor.get("back left");
 
-        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
-        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
-        spinner = hardwareMap.dcMotor.get("spinner");
+        mBackLeft.setDirection(DcMotor.Direction.FORWARD);
+        mFrontLeft.setDirection(DcMotor.Direction.FORWARD);
+        mBackRight.setDirection(DcMotor.Direction.REVERSE);
+        mFrontRight.setDirection(DcMotor.Direction.REVERSE);
     }
-
-    /*
-     * This method will be called repeatedly in a loop
-     *
-     * @see com.qualcomm.robotcore.eventloop.opmode.OpMode#run()
-     */
     @Override
     public void loop() {
-        float left = gamepad1.left_stick_y;
-        frontLeft.setPower(left);
-        backLeft.setPower(left);
-
-        float right = gamepad1.right_stick_y;
-        frontRight.setPower(right);
-        backRight.setPower(right); // hey luke. Hey Colin
-
-        // The spinner controlled by the joystick needs to be a lot slower.
-        if (state == State.Resting) {
-            spinner.setPower(gamepad2.right_stick_y + gamepad2.left_stick_y * .25f);
+        float leftstep = gamepad1.left_trigger - gamepad1.right_trigger;
+        if (Math.abs(leftstep) > 0.0f)
+        {
+            mBackLeft.setPower(-leftstep);
+            mFrontLeft.setPower(leftstep);
+            mBackRight.setPower(leftstep);
+            mFrontRight.setPower(-leftstep);
         }
-
-        // Run it at full speed for a short time with a button
-        if (gamepad2.a && state == State.Resting) {
-            state = State.Spinning;
-            time_spin_started = time;
+        else
+        {
+            // Don't change the motor direction in init because that will alter the
+            mBackLeft.setPower(gamepad1.left_stick_y);
+            mFrontLeft.setPower(gamepad1.left_stick_y);
+            mBackRight.setPower(gamepad1.right_stick_y);
+            mFrontRight.setPower(gamepad1.right_stick_y);
         }
-
-        if (state == State.Spinning) {
-            if (time - time_spin_started < LAUNCH_SPINNING_TIME) {
-                spinner.setPower(-1.0f);
-            } else {
-                spinner.setPower(0.0f);
-                state = State.Resting;
-            }
-        }
+        telemetry.addData("leftstep", leftstep);
+        telemetry.addData("gamepad2 left_stick_y", gamepad2.left_stick_y);
     }
 }
