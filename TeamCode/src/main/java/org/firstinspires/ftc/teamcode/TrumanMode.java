@@ -20,8 +20,11 @@ public class TrumanMode extends OpMode {
     DcMotor mPropLeft;
     DcMotor mPropRight;
 
-    CRServo sSlide;
-    Servo sLeft;
+    Servo sSlide;
+    float slidePosition;
+
+    private static float SERVO_BOTTOM = .44f;
+    private static float SERVO_TOP = .77f;
 
     @Override
     public void init()
@@ -31,45 +34,51 @@ public class TrumanMode extends OpMode {
         mBackRight = hardwareMap.dcMotor.get("back right");
         mBackLeft = hardwareMap.dcMotor.get("back left");
 
-        mBackLeft.setDirection(DcMotor.Direction.REVERSE);
-        mFrontLeft.setDirection(DcMotor.Direction.REVERSE);
+        mBackLeft.setDirection(DcMotor.Direction.FORWARD);
+        mFrontLeft.setDirection(DcMotor.Direction.FORWARD);
+        mBackRight.setDirection(DcMotor.Direction.REVERSE);
+        mFrontRight.setDirection(DcMotor.Direction.REVERSE);
 
         //mRamp = hardwareMap.dcMotor.get("ramp");
         mPropRight = hardwareMap.dcMotor.get("prop right");
         mPropLeft = hardwareMap.dcMotor.get("prop left");
-        sSlide = hardwareMap.crservo.get("servo slide");
-        sLeft = hardwareMap.servo.get("servo left");
-        sLeft.setPosition(0.0);
+        sSlide = hardwareMap.servo.get("servo slide");
+
+        slidePosition = 0.5f;
     }
     @Override
-    public void loop()
-    {
-
-
-        mBackLeft.setPower(gamepad1.left_stick_y);
-        mFrontLeft.setPower(gamepad1.left_stick_y);
-
-        mBackRight.setPower(gamepad1.right_stick_y);
-        mFrontRight.setPower(gamepad1.right_stick_y);
-
-        if(gamepad1.left_bumper) {
+    public void loop() {
+        if (gamepad1.left_bumper) {
             mPropLeft.setPower(1.0f);
             mPropRight.setPower(1.0f);
-        }
-        else {
+        } else {
             mPropLeft.setPower(0.0f);
             mPropRight.setPower(0.0f);
         }
 
-        if(gamepad2.a) {
-            sLeft.setPosition(Range.clip(sLeft.getPosition() + .01, 0.0, 1.0));
+        float leftstep = gamepad1.left_trigger - gamepad1.right_trigger;
+        if (Math.abs(leftstep) > 0.0f)
+        {
+            mBackLeft.setPower(-leftstep);
+            mFrontLeft.setPower(leftstep);
+            mBackRight.setPower(-leftstep);
+            mFrontRight.setPower(leftstep);
         }
-        else if(gamepad2.b) {
-            sLeft.setPosition(Range.clip(sLeft.getPosition() - .01, 0.0, 1.0));
+        else
+        {
+            // Don't change the motor direction in init because that will alter the
+            mBackLeft.setPower(gamepad1.left_stick_y);
+            mFrontLeft.setPower(gamepad1.left_stick_y);
+            mBackRight.setPower(gamepad1.right_stick_y);
+            mFrontRight.setPower(gamepad1.right_stick_y);
         }
+        telemetry.addData("leftstep", leftstep);
 
-        sSlide.setPower(gamepad2.left_stick_y);
-        telemetry.addData("sSlide power", sSlide.getPower());
+        slidePosition += gamepad2.left_stick_y / 20.0f;
+        sSlide.setPosition(Range.clip(slidePosition, SERVO_BOTTOM, SERVO_TOP));
+        telemetry.addData("sSlide power", sSlide.getPosition());
+        // top .77
+        // bottom .44
         telemetry.addData("gamepad2 left_stick_y", gamepad2.left_stick_y);
     }
 }
