@@ -36,7 +36,7 @@ public class TrumanAutoMode extends OpMode {
     private static final double CLICKER_SLIDE_TIME = .4f;
     private static final double CLICKING_FORWARD_TIME = 1.0f;
 
-    private static final double BACKING_UP_TIME = 0.35f;
+    private static final double BACKING_UP_TIME = 0.25f;
 
     private static final double TIME_TOWARDS_BALL = 2.75f;
     private static final double TIME_FROM_BALL = 1.0f;
