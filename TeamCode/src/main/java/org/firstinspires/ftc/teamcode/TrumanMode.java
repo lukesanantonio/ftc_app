@@ -23,6 +23,10 @@ public class TrumanMode extends OpMode {
     Servo sSlide;
     float slidePosition;
 
+    float propPower;
+
+    private static float PROP_POWER_FACTOR = .005f;
+
     private static float SERVO_BOTTOM = .33f;
     private static float SERVO_TOP = .70f;
 
@@ -44,17 +48,26 @@ public class TrumanMode extends OpMode {
         mPropLeft = hardwareMap.dcMotor.get("prop left");
         sSlide = hardwareMap.servo.get("servo slide");
 
-        slidePosition = 0.5f;
+        // Rogue Motor
+        //mMotor = hardwareMap.dcMotor.get("motor");
+
+        slidePosition = SERVO_BOTTOM;
+        propPower = 0.0f;
     }
     @Override
     public void loop() {
-        if (gamepad1.left_bumper) {
-            mPropLeft.setPower(1.0f);
-            mPropRight.setPower(1.0f);
-        } else {
-            mPropLeft.setPower(0.0f);
-            mPropRight.setPower(0.0f);
+        if(gamepad1.left_bumper)
+        {
+            propPower += PROP_POWER_FACTOR;
         }
+        else
+        {
+            propPower -= PROP_POWER_FACTOR;
+        }
+        propPower = Range.clip(propPower, 0.0f, 1.0f);
+
+        mPropLeft.setPower(propPower);
+        mPropRight.setPower(propPower);
 
         float leftstep = gamepad1.left_trigger - gamepad1.right_trigger;
         if (Math.abs(leftstep) > 0.0f)
