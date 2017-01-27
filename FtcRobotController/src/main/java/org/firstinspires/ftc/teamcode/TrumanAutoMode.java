@@ -21,7 +21,7 @@ public class TrumanAutoMode extends OpMode {
     private static final float RAMP_TIME = .6f;
 
     //private static final float INITIAL_FORWARD_TIME = 1.0f;
-    private static final float INITIAL_SIDE_TIME = 4.0f;
+    private static final float INITIAL_SIDE_TIME = 4.3f;
 
     private static final float SLIDE_START_POSITION = .3f;
     private static final float SLIDE_STOP_POSITION = .8f;
