@@ -528,7 +528,7 @@ public class TrumanAutoMode extends OpMode {
                     after_scan_state = State.SlidingToNextBeacon;
                     after_straighten = State.FindTheWhiteLine;
                     after_clicking = State.Backing;
-                    stopState(TIME_STOPPED, State.Straightening);
+                    changeState(State.Straightening);
                 }
                 break;
             case Straightening:
