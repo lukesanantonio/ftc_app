@@ -49,8 +49,6 @@ public class TrumanAutoMode extends OpMode {
 
     private static final int BALL_DISTANCE_THRESHOLD = 21;
 
-    private static final float ROLLING_TIME = 1.0f;
-
     public enum Turn {
         Right, Left
     }
@@ -135,8 +133,6 @@ public class TrumanAutoMode extends OpMode {
     State after_approaching;
     State after_straighten;
     State after_clicking;
-
-    Turn roll_side;
 
     boolean turnWithBackOnly;
 
@@ -249,10 +245,7 @@ public class TrumanAutoMode extends OpMode {
         mBackLeft.setPower(-MOTOR_POWER);
     }
     private void setTurnRightSlow() {
-        setTurnRightSlow(turnWithBackOnly);
-    }
-    private void setTurnRightSlow(boolean backOnly) {
-        if(!backOnly) {
+        if(!turnWithBackOnly) {
             mFrontRight.setPower(-SLOW_TURN_POWER);
             mBackRight.setPower(-SLOW_TURN_POWER);
             mFrontLeft.setPower(SLOW_TURN_POWER);
@@ -269,10 +262,7 @@ public class TrumanAutoMode extends OpMode {
     }
 
     private void setTurnLeftSlow() {
-        setTurnLeftSlow(turnWithBackOnly);
-    }
-    private void setTurnLeftSlow(boolean backOnly) {
-        if(!backOnly) {
+        if(!turnWithBackOnly) {
             mFrontRight.setPower(SLOW_TURN_POWER);
             mBackRight.setPower(SLOW_TURN_POWER);
 
@@ -620,7 +610,6 @@ public class TrumanAutoMode extends OpMode {
                 {
                     if(leftSideGuess == seekColor)
                     {
-                        roll_side = Turn.Left;
                         changeState(State.Clicking);
                     }
                     else
@@ -665,29 +654,16 @@ public class TrumanAutoMode extends OpMode {
                     // No matter if this is the right color, if we got here it means we should click
                     // the button
                     setMotorsStopped();
-                    roll_side = Turn.Right;
                     changeState(State.Clicking);
                 }
                 break;
             case Clicking:
                 telemetry.addData("doing", "clicking");
 
-                if (time - time_at_start < CLICKING_FORWARD_TIME) {
-                    setMotorsForward();
-                }
-                else if (time - time_at_start - CLICKING_FORWARD_TIME < ROLLING_TIME) {
-                    // Roll the back wheels only to sorta roll into the button.
-                    if(roll_side == Turn.Left) {
-                        setTurnRightSlow(true);
-                    }
-                    else {
-                        setTurnLeftSlow(true);
-                    }
-                }
-                else {
-                    setMotorsStopped();
-                    after_straighten = after_clicking;
-                    changeState(State.Straightening);
+                setMotorsForward();
+
+                if (time - time_at_start >= CLICKING_FORWARD_TIME) {
+                    changeState(State.Backing);
                 }
                 break;
             case Backing:
