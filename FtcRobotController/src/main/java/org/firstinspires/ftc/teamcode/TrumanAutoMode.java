@@ -134,6 +134,7 @@ public class TrumanAutoMode extends OpMode {
     State after_scan_state;
     State after_approaching;
     State after_straighten;
+    State after_clicking;
 
     Turn roll_side;
 
@@ -391,6 +392,7 @@ public class TrumanAutoMode extends OpMode {
         gyro.calibrate();
 
         turnWithBackOnly = false;
+        after_clicking = State.Backing;
 
         changeState(State.Calibrating);
     }
@@ -525,6 +527,7 @@ public class TrumanAutoMode extends OpMode {
                     // to finding the white line again.
                     after_scan_state = State.SlidingToNextBeacon;
                     after_straighten = State.FindTheWhiteLine;
+                    after_clicking = State.Backing;
                     stopState(TIME_STOPPED, State.Straightening);
                 }
                 break;
@@ -714,6 +717,7 @@ public class TrumanAutoMode extends OpMode {
                     // Partially reset state
                     turnWithBackOnly = false;
                     after_scan_state = State.Done;
+                    after_clicking = State.Done;
                     changeState(State.FindTheWhiteLine);
                 }
                 break;
