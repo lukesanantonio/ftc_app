@@ -12,23 +12,23 @@ import com.qualcomm.robotcore.hardware.Servo;
 public class TrumanAutoMode extends OpMode {
 
     // Constants
-    private static final float MOTOR_POWER = .2f;
+    private static final float FAST_MOTOR_POWER = .45f;
     private static final float SLOW_MOTOR_POWER = .13f;
     private static final float SLOW_TURN_POWER = .13f;
+    private static final float MOTOR_POWER = .19f;
+    private static final float FIND_LINE_SIDE_POWER = .20f;
 
     private static final float TIME_STOPPED = 1.0f;
 
     private static final float RAMP_TIME = .6f;
 
     //private static final float INITIAL_FORWARD_TIME = 1.0f;
-    private static final float INITIAL_SIDE_TIME = 4.3f;
-
-    private static final float SLIDE_START_POSITION = .3f;
-    private static final float SLIDE_STOP_POSITION = .8f;
+    private static final float INITIAL_SIDE_TIME = 4.5f;
 
     private static final float FIRST_TURING_TIME = 1.2f;
 
-    private static final int BEACON_DISTANCE_THRESHOLD = 17;
+    private static final int BEACON_DISTANCE_THRESHOLD = 16;
+    private static final int BEACON_DISTANCE_CLOSER_THRESHOLD = 15;
 
     private static final int COLOR_ON_WHITE_THRESHOLD = 8;
     private static final int COLOR_OFF_WHITE_THRESHOLD = 3;
@@ -36,7 +36,7 @@ public class TrumanAutoMode extends OpMode {
     private static final double CLICKER_SLIDE_TIME = .4f;
     private static final double CLICKING_FORWARD_TIME = 1.0f;
 
-    private static final double BACKING_UP_TIME = 0.25f;
+    private static final double BACKING_UP_TIME = 0.75f;
 
     private static final double TIME_TOWARDS_BALL = 2.75f;
     private static final double TIME_FROM_BALL = 1.0f;
@@ -47,7 +47,14 @@ public class TrumanAutoMode extends OpMode {
 
     private static final float TIME_SLIDING_TO_NEXT_BEACON = 1.0f;
 
-    private static final int BALL_DISTANCE_THRESHOLD = 21;
+    private static final int BALL_DISTANCE_THRESHOLD = 29;
+
+    private static final float INITIAL_SLIDE_POSITION = .3f;
+    private static final float FIRST_BALL_POSITION = .44f;
+    private static final float SECOND_BALL_POSITION = .70f;
+
+    private static final float SHOOTING_DELAY = 1.3f;
+    private static final float SECOND_SHOOTING_DELAY = 1.5f;
 
     public enum Turn {
         Right, Left
@@ -59,16 +66,10 @@ public class TrumanAutoMode extends OpMode {
 
     public enum State {
         Calibrating,
-        RampUpShootStageOne,
-        RampUpShootStageTwo,
-        ShootingBalls,
-        RampDownShootStageOne,
-        RampDownShootStageTwo,
-        DrivingTowardsBall,
-        BackingFromBall,
-        Turning,
         Start,
         InitialForward,
+        ShootingFirstBall,
+        ShootingSecondBall,
         InitialSide,
         Searching,
         Straightening,
@@ -158,7 +159,6 @@ public class TrumanAutoMode extends OpMode {
         mPropLeft = hardwareMap.dcMotor.get("prop left");
 
         sSlide = hardwareMap.servo.get("servo slide");
-        sSlide.setPosition(SLIDE_START_POSITION);
 
         frontColor = hardwareMap.colorSensor.get("front");
         frontColor.setI2cAddress(I2cAddr.create8bit(0x2c));
@@ -170,6 +170,7 @@ public class TrumanAutoMode extends OpMode {
 
         range = new RangeSensor(hardwareMap, "range");
         gyro = hardwareMap.gyroSensor.get("gyro");
+        gyro.calibrate();
 
         resetState();
     }
@@ -197,17 +198,23 @@ public class TrumanAutoMode extends OpMode {
     }
 
     private void setMotorsForward() {
-        mFrontRight.setPower(MOTOR_POWER);
-        mBackRight.setPower(MOTOR_POWER);
-        mFrontLeft.setPower(MOTOR_POWER);
-        mBackLeft.setPower(MOTOR_POWER);
+        setMotorsForward(MOTOR_POWER);
+    }
+    private void setMotorsForward(float power) {
+        mFrontRight.setPower(power);
+        mBackRight.setPower(power);
+        mFrontLeft.setPower(power);
+        mBackLeft.setPower(power);
     }
 
     private void setMotorsBackward() {
-        mFrontRight.setPower(-MOTOR_POWER);
-        mBackRight.setPower(-MOTOR_POWER);
-        mFrontLeft.setPower(-MOTOR_POWER);
-        mBackLeft.setPower(-MOTOR_POWER);
+        setMotorsBackward(MOTOR_POWER);
+    }
+    private void setMotorsBackward(float power) {
+        mFrontRight.setPower(-power);
+        mBackRight.setPower(-power);
+        mFrontLeft.setPower(-power);
+        mBackLeft.setPower(-power);
     }
     private void setMotorsForwardSlow() {
         mFrontRight.setPower(SLOW_MOTOR_POWER);
@@ -280,18 +287,24 @@ public class TrumanAutoMode extends OpMode {
 
 
     private void setMotorsRight() {
-        mFrontRight.setPower(MOTOR_POWER);
-        mBackRight.setPower(-MOTOR_POWER);
-
-        mFrontLeft.setPower(MOTOR_POWER);
-        mBackLeft.setPower(-MOTOR_POWER);
+        setMotorsRight(MOTOR_POWER);
     }
     private void setMotorsLeft() {
-        mFrontRight.setPower(-MOTOR_POWER);
-        mBackRight.setPower(MOTOR_POWER);
+        setMotorsLeft(MOTOR_POWER);
+    }
+    private void setMotorsRight(float power) {
+        mFrontRight.setPower(power);
+        mBackRight.setPower(-power);
 
-        mFrontLeft.setPower(-MOTOR_POWER);
-        mBackLeft.setPower(MOTOR_POWER);
+        mFrontLeft.setPower(power);
+        mBackLeft.setPower(-power);
+    }
+    private void setMotorsLeft(float power) {
+        mFrontRight.setPower(-power);
+        mBackRight.setPower(power);
+
+        mFrontLeft.setPower(-power);
+        mBackLeft.setPower(power);
     }
     private void setMotorsRightSlow() {
         mFrontRight.setPower(SLOW_MOTOR_POWER);
@@ -365,7 +378,7 @@ public class TrumanAutoMode extends OpMode {
     }
 
     public void resetState() {
-        sSlide.setPosition(SLIDE_START_POSITION);
+        sSlide.setPosition(INITIAL_SLIDE_POSITION);
 
         time_at_start = 0.0f;
         time_to_move = 0.0f;
@@ -377,9 +390,6 @@ public class TrumanAutoMode extends OpMode {
         // as defaults that can be relied on.
         time_to_stop = 1.0f;
         next_state = State.Done;
-
-        // Calibrate the driver state
-        gyro.calibrate();
 
         turnWithBackOnly = false;
         after_clicking = State.Backing;
@@ -395,70 +405,28 @@ public class TrumanAutoMode extends OpMode {
         switch (state) {
             case Calibrating:
                 telemetry.addData("doing", "calibrating");
+
+                // Ramp up the props
+                mPropLeft.setPower(.3f);
+                mPropRight.setPower(.3f);
+
                 if(!gyro.isCalibrating()) {
+
+                    // Second ramp up step
+                    mPropLeft.setPower(.6f);
+                    mPropRight.setPower(.6f);
+
                     // Don't start searching until the gyro is finished calibrating.
                     after_scan_state = State.SlidingToNextBeacon;
                     changeState(State.Start);
                 }
                 break;
-            case RampUpShootStageOne:
-                telemetry.addData("doing", "ramp up shoot stage one");
-                if (time - time_at_start < RAMP_TIME) {
-                    mPropRight.setPower(.4f);
-                    mPropLeft.setPower(.4f);
-                } else {
-                    changeState(State.RampUpShootStageTwo);
-                }
-                break;
-            case RampUpShootStageTwo:
-                telemetry.addData("doing", "ramp up shoot stage two");
-                if (time - time_at_start < RAMP_TIME) {
-                    mPropRight.setPower(.7f);
-                    mPropLeft.setPower(.7f);
-                } else {
-                    changeState(State.ShootingBalls);
-                }
-                break;
-            case ShootingBalls:
-                telemetry.addData("doing", "shooting balls");
-                if (time - time_at_start < 2.0f) {
-                    mPropRight.setPower(1.0f);
-                    mPropLeft.setPower(1.0f);
-                    sSlide.setPosition(SLIDE_STOP_POSITION);
-                } else {
-                    changeState(State.RampDownShootStageOne);
-                }
-                break;
-            case RampDownShootStageOne:
-                telemetry.addData("doing", "ramp down shoot stage one");
-                if (time - time_at_start < RAMP_TIME) {
-                    mPropRight.setPower(.5f);
-                    mPropLeft.setPower(.5f);
-                } else {
-                    changeState(State.RampDownShootStageTwo);
-                }
-                break;
-            case RampDownShootStageTwo:
-                telemetry.addData("doing", "ramp down shoot stage two");
-                if (time - time_at_start < RAMP_TIME) {
-                    mPropRight.setPower(.2f);
-                    mPropLeft.setPower(.2f);
-                } else {
-                    mPropRight.setPower(0.0f);
-                    mPropLeft.setPower(0.0f);
-                    changeState(State.Start);
-                }
-                break;
-            case DrivingTowardsBall:
-                telemetry.addData("doing", "driving towards ball");
-                setMotorsBackward();
-                if (time - time_at_start >= TIME_TOWARDS_BALL) {
-                    setMotorsStopped();
-                    changeState(State.Start);
-                }
-                break;
             case Start:
                 telemetry.addData("doing", "starting");
+
+                // Finish the ramp up
+                mPropLeft.setPower(.87f);
+                mPropRight.setPower(.87f);
 
                 if (time >= timeDelay) {
                     changeState(State.InitialForward);
@@ -466,14 +434,47 @@ public class TrumanAutoMode extends OpMode {
 
                 break;
             case InitialForward:
-                setMotorsForward();
+                telemetry.addData("doing", "initial forward");
+                setMotorsForward(FAST_MOTOR_POWER);
                 if(range.ultraSonic() <= BALL_DISTANCE_THRESHOLD)
                 {
                     setMotorsStopped();
+                    changeState(State.ShootingFirstBall);
+                }
+                break;
+            case ShootingFirstBall:
+                telemetry.addData("doing", "shooting first ball");
+
+                // The prop wheels should be at the right speed
+                sSlide.setPosition(FIRST_BALL_POSITION);
+                if(time - time_at_start >= SHOOTING_DELAY)
+                {
+                    // Move on after the delay
+                    changeState(State.ShootingSecondBall);
+                }
+                break;
+            case ShootingSecondBall:
+                telemetry.addData("doing", "shooting second ball");
+
+                // The prop wheels should be at the right speed
+                sSlide.setPosition(SECOND_BALL_POSITION);
+                if(time - time_at_start >= SECOND_SHOOTING_DELAY)
+                {
+                    // Move on after the delay
                     changeState(State.InitialSide);
+
+                    // Start ramping down the props
+                    mPropLeft.setPower(.4f);
+                    mPropRight.setPower(.4f);
                 }
                 break;
             case InitialSide:
+                telemetry.addData("doing", "initial side");
+
+                // Mostly ramp down - let the motors spin for awhile.
+                mPropLeft.setPower(.05f);
+                mPropRight.setPower(.05f);
+
                 if(turning == Turn.Left) {
                     setMotorsRight();
                 }
@@ -488,27 +489,12 @@ public class TrumanAutoMode extends OpMode {
                     changeState(State.Searching);
                 }
                 break;
-            case BackingFromBall:
-                telemetry.addData("doing", "backing from ball");
-                setMotorsForward();
-                if (time - time_at_start >= TIME_FROM_BALL)
-                {
-                    setMotorsStopped();
-                    changeState(State.Turning);
-                }
-                break;
-            case Turning:
-                telemetry.addData("doing", "turning");
-                if (turning == Turn.Left) {
-                    setTurnLeft();
-                } else if (turning == Turn.Right) {
-                    setTurnRight();
-                }
-                if (time - time_at_start > FIRST_TURING_TIME) {
-                    changeState(State.Searching);
-                }
-                break;
             case Searching:
+
+                // Totally ramp down
+                mPropLeft.setPower(0.0f);
+                mPropRight.setPower(0.0f);
+
                 telemetry.addData("doing", "searching");
                 setMotorsForwardSlow();
 
@@ -560,11 +546,11 @@ public class TrumanAutoMode extends OpMode {
 
                 if(turning == Turn.Left)
                 {
-                    setMotorsLeft();
+                    setMotorsLeft(FIND_LINE_SIDE_POWER);
                 }
                 else
                 {
-                    setMotorsRight();
+                    setMotorsRight(FIND_LINE_SIDE_POWER);
                 }
 
                 if(bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD)
@@ -631,10 +617,13 @@ public class TrumanAutoMode extends OpMode {
                 }
 
                 setMotorsForwardSlow();
-                if (range.ultraSonic() <= BEACON_DISTANCE_THRESHOLD) {
+                if (range.ultraSonic() <= BEACON_DISTANCE_CLOSER_THRESHOLD && leftSideGuess == null) {
                     setMotorsStopped();
                     waitingForChangeFrom = leftSideGuess;
                     changeState(State.WaitingForColorChange);
+                } else if(leftSideGuess == seekColor)
+                {
+                    changeState(State.Clicking);
                 }
                 break;
             case WaitingForColorChange:
@@ -746,13 +735,24 @@ public class TrumanAutoMode extends OpMode {
 
     private Color guessFrontColor() {
         float red_blue_ratio = frontColor.red() / (float) frontColor.blue();
-        if (red_blue_ratio > 3.0f) {
+        if(frontColor.blue() == 0)
+        {
+            red_blue_ratio = (float) frontColor.red();
+        }
+        if (red_blue_ratio >= 2.5f) {
             return Color.Red;
         }
         float blue_red_ratio = frontColor.blue() / (float) frontColor.red();
-        if (blue_red_ratio > 3.0f) {
+        if(frontColor.red() == 0)
+        {
+            blue_red_ratio = (float) frontColor.blue();
+        }
+        if (blue_red_ratio >= 2.5f) {
             return Color.Blue;
         }
+
+        telemetry.addData("red / blue ratio", red_blue_ratio);
+        telemetry.addData("blue / red ratio", blue_red_ratio);
         return null;
     }
 
