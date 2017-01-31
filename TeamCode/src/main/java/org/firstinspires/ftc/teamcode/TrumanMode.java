@@ -56,7 +56,7 @@ public class TrumanMode extends OpMode {
     }
     @Override
     public void loop() {
-        if(gamepad1.left_bumper)
+        if(gamepad2.left_bumper)
         {
             propPower += PROP_POWER_FACTOR;
         }
