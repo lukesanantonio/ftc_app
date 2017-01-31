@@ -105,13 +105,24 @@ public class Sensors extends OpMode {
     }
     private Color guessFrontColor() {
         float red_blue_ratio = frontColor.red() / (float) frontColor.blue();
-        if (red_blue_ratio > 4.0f) {
+        if(frontColor.blue() == 0)
+        {
+            red_blue_ratio = (float) frontColor.red();
+        }
+        if (red_blue_ratio > 2.5f) {
             return Color.Red;
         }
         float blue_red_ratio = frontColor.blue() / (float) frontColor.red();
-        if (blue_red_ratio > 4.0f) {
+        if(frontColor.red() == 0)
+        {
+            blue_red_ratio = (float) frontColor.blue();
+        }
+        if (blue_red_ratio >= 2.5f) {
             return Color.Blue;
         }
+
+        telemetry.addData("red / blue ratio", red_blue_ratio);
+        telemetry.addData("blue / red ratio", blue_red_ratio);
         return null;
     }
 }
