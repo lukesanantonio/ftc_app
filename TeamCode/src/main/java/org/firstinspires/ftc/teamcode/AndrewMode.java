@@ -16,8 +16,12 @@ public class AndrewMode extends OpMode {
     DcMotor mBackRight;
     DcMotor mBackLeft;
 
-    DcMotor mPropLeft;
-    DcMotor mPropRight;
+    DcMotor mSlide;
+    DcMotor mButton;
+
+    float fac;
+    boolean slow_mode;
+    boolean just_changed;
 
     @Override
     public void init()
@@ -31,10 +35,21 @@ public class AndrewMode extends OpMode {
         mFrontLeft.setDirection(DcMotor.Direction.FORWARD);
         mBackRight.setDirection(DcMotor.Direction.REVERSE);
         mFrontRight.setDirection(DcMotor.Direction.REVERSE);
+
+        mSlide = hardwareMap.dcMotor.get("slide");
+        mSlide.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        mButton = hardwareMap.dcMotor.get("button");
+
+        fac = 1.0f;
+        slow_mode = false;
     }
     @Override
     public void loop() {
-        float leftstep = gamepad1.left_trigger - gamepad1.right_trigger;
+
+        if(slow_mode) fac = .4f;
+        else fac = 1.0f;
+
+        float leftstep = gamepad1.left_trigger - gamepad1.right_trigger * fac;
         if (Math.abs(leftstep) > 0.0f)
         {
             mBackLeft.setPower(-leftstep);
@@ -45,12 +60,27 @@ public class AndrewMode extends OpMode {
         else
         {
             // Don't change the motor direction in init because that will alter the
-            mBackLeft.setPower(gamepad1.left_stick_y);
-            mFrontLeft.setPower(gamepad1.left_stick_y);
-            mBackRight.setPower(gamepad1.right_stick_y);
-            mFrontRight.setPower(gamepad1.right_stick_y);
+            mBackLeft.setPower(gamepad1.left_stick_y * fac);
+            mFrontLeft.setPower(gamepad1.left_stick_y * fac);
+            mBackRight.setPower(gamepad1.right_stick_y * fac);
+            mFrontRight.setPower(gamepad1.right_stick_y * fac);
         }
         telemetry.addData("leftstep", leftstep);
         telemetry.addData("gamepad2 left_stick_y", gamepad2.left_stick_y);
+
+        telemetry.addData("slide", mSlide.getCurrentPosition());
+
+        if(gamepad1.left_bumper && !just_changed)
+        {
+            slow_mode = !slow_mode;
+            just_changed = true;
+        }
+        else if(!gamepad1.left_bumper)
+        {
+            just_changed = false;
+        }
+
+        mSlide.setPower(gamepad2.left_stick_y * fac);
+        mButton.setPower(gamepad2.right_stick_y * fac);
     }
 }
