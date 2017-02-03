@@ -88,15 +88,5 @@ public class FtcOpModeRegister implements OpModeRegister {
                 TrumanAutoMode.Turn.Left, TrumanAutoMode.Color.Blue, 0.0f
         ));
 
-        manager.register("A-Auto (Right,Red,0 Delay)", new AndrewAutoMode(
-                AndrewAutoMode.Turn.Right, AndrewAutoMode.Color.Red, 0.0f
-        ));
-        manager.register("A-Auto (Left,Blue,0 Delay)", new AndrewAutoMode(
-                AndrewAutoMode.Turn.Left, AndrewAutoMode.Color.Blue, 0.0f
-        ));
-
-        manager.register("Original Truman", new TrumanOriginalAutoMode(
-                TrumanOriginalAutoMode.Turn.Left, TrumanOriginalAutoMode.Color.Blue, 0.0f
-        ));
     }
 }

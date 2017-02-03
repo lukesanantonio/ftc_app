@@ -1,12 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.hardware.I2cAddr;
-import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 public class TrumanAutoMode extends OpMode {
@@ -27,8 +25,8 @@ public class TrumanAutoMode extends OpMode {
 
     private static final float FIRST_TURING_TIME = 1.2f;
 
-    private static final int BEACON_DISTANCE_THRESHOLD = 16;
-    private static final int BEACON_DISTANCE_CLOSER_THRESHOLD = 15;
+    private static final int BEACON_DISTANCE_THRESHOLD = 15;
+    private static final int BEACON_DISTANCE_CLOSER_THRESHOLD = 14;
 
     private static final int COLOR_ON_WHITE_THRESHOLD = 8;
     private static final int COLOR_OFF_WHITE_THRESHOLD = 3;
@@ -109,7 +107,7 @@ public class TrumanAutoMode extends OpMode {
     ColorSensor bottomColor;
     ColorSensor frontColor;
 
-    RangeSensor range;
+    RangeFinder range;
 
     // Init state
     Turn turning = Turn.Right;
@@ -168,7 +166,7 @@ public class TrumanAutoMode extends OpMode {
         frontColor.enableLed(false);
         bottomColor.enableLed(false);
 
-        range = new RangeSensor(hardwareMap, "range");
+        range = new RangeFinder(hardwareMap, "range");
         gyro = hardwareMap.gyroSensor.get("gyro");
         gyro.calibrate();
 
@@ -307,18 +305,10 @@ public class TrumanAutoMode extends OpMode {
         mBackLeft.setPower(power);
     }
     private void setMotorsRightSlow() {
-        mFrontRight.setPower(SLOW_MOTOR_POWER);
-        mBackRight.setPower(-SLOW_MOTOR_POWER);
-
-        mFrontLeft.setPower(SLOW_MOTOR_POWER);
-        mBackLeft.setPower(-SLOW_MOTOR_POWER);
+        setMotorsRight(SLOW_MOTOR_POWER);
     }
     private void setMotorsLeftSlow() {
-        mFrontRight.setPower(-SLOW_MOTOR_POWER);
-        mBackRight.setPower(SLOW_MOTOR_POWER);
-
-        mFrontLeft.setPower(-SLOW_MOTOR_POWER);
-        mBackLeft.setPower(SLOW_MOTOR_POWER);
+        setMotorsLeft(SLOW_MOTOR_POWER);
     }
 
     private boolean isInAngle(float angle, float begin, float end)
@@ -410,7 +400,7 @@ public class TrumanAutoMode extends OpMode {
                 mPropLeft.setPower(.3f);
                 mPropRight.setPower(.3f);
 
-                if(!gyro.isCalibrating()) {
+                if (!gyro.isCalibrating()) {
 
                     // Second ramp up step
                     mPropLeft.setPower(.6f);
@@ -436,8 +426,7 @@ public class TrumanAutoMode extends OpMode {
             case InitialForward:
                 telemetry.addData("doing", "initial forward");
                 setMotorsForward(FAST_MOTOR_POWER);
-                if(range.ultraSonic() <= BALL_DISTANCE_THRESHOLD)
-                {
+                if (range.ultraSonic() <= BALL_DISTANCE_THRESHOLD) {
                     setMotorsStopped();
                     changeState(State.ShootingFirstBall);
                 }
@@ -447,8 +436,7 @@ public class TrumanAutoMode extends OpMode {
 
                 // The prop wheels should be at the right speed
                 sSlide.setPosition(FIRST_BALL_POSITION);
-                if(time - time_at_start >= SHOOTING_DELAY)
-                {
+                if (time - time_at_start >= SHOOTING_DELAY) {
                     // Move on after the delay
                     changeState(State.ShootingSecondBall);
                 }
@@ -458,8 +446,7 @@ public class TrumanAutoMode extends OpMode {
 
                 // The prop wheels should be at the right speed
                 sSlide.setPosition(SECOND_BALL_POSITION);
-                if(time - time_at_start >= SECOND_SHOOTING_DELAY)
-                {
+                if (time - time_at_start >= SECOND_SHOOTING_DELAY) {
                     // Move on after the delay
                     changeState(State.InitialSide);
 
@@ -475,16 +462,13 @@ public class TrumanAutoMode extends OpMode {
                 mPropLeft.setPower(.05f);
                 mPropRight.setPower(.05f);
 
-                if(turning == Turn.Left) {
+                if (turning == Turn.Left) {
                     setMotorsRight();
-                }
-                else
-                {
+                } else {
                     setMotorsLeft();
                 }
 
-                if(time - time_at_start >= INITIAL_SIDE_TIME)
-                {
+                if (time - time_at_start >= INITIAL_SIDE_TIME) {
                     setMotorsStopped();
                     changeState(State.Searching);
                 }
@@ -510,33 +494,23 @@ public class TrumanAutoMode extends OpMode {
             case Straightening:
                 telemetry.addData("doing", "straightening");
 
-                if(turning == Turn.Left)
-                {
-                    if(gyro.getHeading() < 90 || gyro.getHeading() > 270)
-                    {
+                if (turning == Turn.Left) {
+                    if (gyro.getHeading() < 90 || gyro.getHeading() > 270) {
                         setTurnRightSlow();
-                    }
-                    else if(gyro.getHeading() > 90)
-                    {
+                    } else if (gyro.getHeading() > 90) {
                         setTurnLeftSlow();
                     }
-                    if(robotIsAtAngle(90))
-                    {
+                    if (robotIsAtAngle(90)) {
                         changeState(after_straighten);
                     }
-                }
-                else if(turning == Turn.Right)
-                {
-                    if(gyro.getHeading() < 90 || gyro.getHeading() > 270) {
+                } else if (turning == Turn.Right) {
+                    if (gyro.getHeading() < 90 || gyro.getHeading() > 270) {
                         setTurnLeftSlow();
-                    }
-                    else if(gyro.getHeading() > 90)
-                    {
+                    } else if (gyro.getHeading() > 90) {
                         setTurnRightSlow();
                     }
 
-                    if(robotIsAtAngle(270))
-                    {
+                    if (robotIsAtAngle(270)) {
                         changeState(after_straighten);
                     }
                 }
@@ -544,17 +518,13 @@ public class TrumanAutoMode extends OpMode {
             case FindTheWhiteLine:
                 telemetry.addData("doing", "finding the white line");
 
-                if(turning == Turn.Left)
-                {
+                if (turning == Turn.Left) {
                     setMotorsLeft(FIND_LINE_SIDE_POWER);
-                }
-                else
-                {
+                } else {
                     setMotorsRight(FIND_LINE_SIDE_POWER);
                 }
 
-                if(bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD)
-                {
+                if (bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD) {
                     // We found the white line
                     setMotorsStopped();
                     // If we haven't straightened like this do this
@@ -585,33 +555,26 @@ public class TrumanAutoMode extends OpMode {
                 leftSideGuess = guessFrontColor();
 
                 setMotorsLeftSlow();
-                if(time - time_at_start >= 1.0f && leftSideGuess == null)
-                {
+                if (time - time_at_start >= 1.0f && leftSideGuess == null) {
                     setMotorsStopped();
                     // Start approaching the beacon if we still can't find anything
                     changeState(State.ApproachingBeaconScanningColor);
                     break;
-                }
-                else if(leftSideGuess != null)
-                {
-                    if(leftSideGuess == seekColor)
-                    {
+                } else if (time - time_at_start >= .5f && leftSideGuess != null) {
+                    if (leftSideGuess == seekColor) {
                         changeState(State.Clicking);
-                    }
-                    else
-                    {
+                    } else {
                         // Move to the right
                         setMotorsStopped();
                         waitingForChangeFrom = leftSideGuess;
-                        changeState(State.WaitingForColorChange);
+                        changeState(State.ScanningRight);
                     }
                 }
                 break;
             case ApproachingBeaconScanningColor:
                 telemetry.addData("doing", "approaching beacon scanning color");
 
-                if(leftSideGuess == null)
-                {
+                if (leftSideGuess == null) {
                     // Guess the front color.
                     leftSideGuess = guessFrontColor();
                 }
@@ -620,30 +583,30 @@ public class TrumanAutoMode extends OpMode {
                 if (range.ultraSonic() <= BEACON_DISTANCE_CLOSER_THRESHOLD && leftSideGuess == null) {
                     setMotorsStopped();
                     waitingForChangeFrom = leftSideGuess;
-                    changeState(State.WaitingForColorChange);
-                } else if(leftSideGuess == seekColor)
-                {
+                    changeState(State.ScanningRight);
+                } else if (leftSideGuess == seekColor) {
                     changeState(State.Clicking);
                 }
                 break;
-            case WaitingForColorChange:
+            case ScanningRight:
                 telemetry.addData("doing", "waiting for color change");
                 setMotorsRight();
-                if (guessFrontColor() != waitingForChangeFrom)
-                {
-                    changeState(State.WaitingForNewColor);
-                }
-                break;
-            case WaitingForNewColor:
-                telemetry.addData("doing", "waiting for new color");
-                setMotorsRight();
                 rightSideGuess = guessFrontColor();
-                if(rightSideGuess != null || time - time_at_start >= .5f)
+                if (rightSideGuess != null && rightSideGuess != waitingForChangeFrom) {
+                    // We found a color
+                    if (rightSideGuess == seekColor)
+                    {
+                        changeState(State.Clicking);
+                    }
+                    else
+                    {
+                        // Shit, we can't click it, try scanning again
+                        changeState(after_scan_state);
+                    }
+                }
+                else if(time - time_at_start >= 1.0f)
                 {
-                    // No matter if this is the right color, if we got here it means we should click
-                    // the button
-                    setMotorsStopped();
-                    changeState(State.Clicking);
+                    changeState(after_scan_state);
                 }
                 break;
             case Clicking:
@@ -652,7 +615,7 @@ public class TrumanAutoMode extends OpMode {
                 setMotorsForward();
 
                 if (time - time_at_start >= CLICKING_FORWARD_TIME) {
-                    changeState(State.Backing);
+                    changeState(after_clicking);
                 }
                 break;
             case Backing:
@@ -737,17 +700,17 @@ public class TrumanAutoMode extends OpMode {
         float red_blue_ratio = frontColor.red() / (float) frontColor.blue();
         if(frontColor.blue() == 0)
         {
-            red_blue_ratio = (float) frontColor.red();
+            red_blue_ratio = frontColor.red();
         }
-        if (red_blue_ratio >= 2.5f) {
+        if (red_blue_ratio >= 4.0f) {
             return Color.Red;
         }
         float blue_red_ratio = frontColor.blue() / (float) frontColor.red();
-        if(frontColor.red() == 0)
+        if (blue_red_ratio == 0)
         {
-            blue_red_ratio = (float) frontColor.blue();
+            blue_red_ratio = frontColor.blue();
         }
-        if (blue_red_ratio >= 2.5f) {
+        if (blue_red_ratio >= 4.0f) {
             return Color.Blue;
         }
 

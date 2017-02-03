@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.I2cDeviceSynchImpl;
  * Created by luke on 1/14/17.
  */
 
-public class RangeSensor {
+public class RangeFinder {
     private I2cDevice range;
     private I2cDeviceSynch rangeSynch;
 
@@ -20,7 +20,7 @@ public class RangeSensor {
     public static final int RANGE_READ_START = 0x04; //Register to start reading
     public static final int RANGE_READ_LENGTH = 2; //Number of byte to read
 
-    public RangeSensor(HardwareMap map, String name)
+    public RangeFinder(HardwareMap map, String name)
     {
         range = map.i2cDevice.get(name);
         rangeSynch = new I2cDeviceSynchImpl(range, rangeAddr, false);

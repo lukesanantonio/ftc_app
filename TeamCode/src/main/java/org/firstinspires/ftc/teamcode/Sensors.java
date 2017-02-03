@@ -2,19 +2,16 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.hardware.I2cAddr;
-import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
-import com.qualcomm.robotcore.util.Range;
 
 @Autonomous
 public class Sensors extends OpMode {
 
     ColorSensor frontColor;
     ColorSensor bottomColor;
-    RangeSensor rangeSensor;
+    RangeFinder rangeFinder;
     GyroSensor gyroSensor;
 
     enum Color
@@ -31,7 +28,7 @@ public class Sensors extends OpMode {
         bottomColor.setI2cAddress(I2cAddr.create8bit(0x1c));
         bottomColor.enableLed(false);
 
-        rangeSensor = new RangeSensor(hardwareMap, "range");
+        rangeFinder = new RangeFinder(hardwareMap, "range");
 
         gyroSensor = hardwareMap.gyroSensor.get("gyro");
     }
@@ -60,9 +57,9 @@ public class Sensors extends OpMode {
         telemetry.addData("bottom alpha", bottomColor.alpha());
         telemetry.addData("bottom i2c", bottomColor.getI2cAddress().toString());
 
-        rangeSensor.updateCache();
-        telemetry.addData("range optical", rangeSensor.optical());
-        telemetry.addData("range ultrasonic", rangeSensor.ultraSonic());
+        rangeFinder.updateCache();
+        telemetry.addData("range optical", rangeFinder.optical());
+        telemetry.addData("range ultrasonic", rangeFinder.ultraSonic());
 
         Color color = guessFrontColor();
         if(color != null) {
@@ -107,17 +104,17 @@ public class Sensors extends OpMode {
         float red_blue_ratio = frontColor.red() / (float) frontColor.blue();
         if(frontColor.blue() == 0)
         {
-            red_blue_ratio = (float) frontColor.red();
+            red_blue_ratio = frontColor.red();
         }
-        if (red_blue_ratio > 2.5f) {
+        if (red_blue_ratio >= 4.0f) {
             return Color.Red;
         }
         float blue_red_ratio = frontColor.blue() / (float) frontColor.red();
-        if(frontColor.red() == 0)
+        if (blue_red_ratio == 0)
         {
-            blue_red_ratio = (float) frontColor.blue();
+            blue_red_ratio = frontColor.blue();
         }
-        if (blue_red_ratio >= 2.5f) {
+        if (blue_red_ratio >= 4.0f) {
             return Color.Blue;
         }
 
@@ -125,4 +122,5 @@ public class Sensors extends OpMode {
         telemetry.addData("blue / red ratio", blue_red_ratio);
         return null;
     }
+
 }

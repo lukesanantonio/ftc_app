@@ -75,7 +75,7 @@ public class TrumanOriginalAutoMode extends OpMode {
     ColorSensor bottomColor;
     ColorSensor frontColor;
 
-    RangeSensor range;
+    RangeFinder range;
 
     // Init state
     Turn turning = Turn.Right;
@@ -120,7 +120,7 @@ public class TrumanOriginalAutoMode extends OpMode {
         bottomColor = hardwareMap.colorSensor.get("bottom");
         bottomColor.setI2cAddress(I2cAddr.create8bit(0x1c));
 
-        range = new RangeSensor(hardwareMap, "range");
+        range = new RangeFinder(hardwareMap, "range");
 
         resetState();
     }
