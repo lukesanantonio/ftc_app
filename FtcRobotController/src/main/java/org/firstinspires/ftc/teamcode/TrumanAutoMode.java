@@ -6,38 +6,33 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.Range;
 
 public class TrumanAutoMode extends OpMode {
 
     // Constants
-    private static final float FAST_MOTOR_POWER = .45f;
-    private static final float SLOW_MOTOR_POWER = .13f;
-    private static final float SLOW_TURN_POWER = .13f;
-    private static final float MOTOR_POWER = .19f;
-    private static final float FIND_LINE_SIDE_POWER = .20f;
 
-    private static final float TIME_STOPPED = 1.0f;
+    private static final float SCAN_POWER = 0.3f;
+    private static final float APPROACH_POWER = 0.5f;
+    private static final float SEARCH_POWER = 0.15f;
+    private static final float FAST_STRAIGHTENING_POWER = 0.45f;
+    private static final float SLOW_STRAIGHTENING_POWER = 0.30f;
+    private static final float FAST_POWER = 1.0f;
+    private static final float CLICK_POWER = .3f;
+    private static final float FIND_WHITE_LINE_POWER = 0.4f;
 
-    private static final float RAMP_TIME = .6f;
-
-    //private static final float INITIAL_FORWARD_TIME = 1.0f;
-    private static final float INITIAL_SIDE_TIME = 4.5f;
-
-    private static final float FIRST_TURING_TIME = 1.2f;
-
-    private static final int BEACON_DISTANCE_THRESHOLD = 15;
-    private static final int BEACON_DISTANCE_CLOSER_THRESHOLD = 14;
-
-    private static final int COLOR_ON_WHITE_THRESHOLD = 8;
-    private static final int COLOR_OFF_WHITE_THRESHOLD = 3;
-
-    private static final double CLICKER_SLIDE_TIME = .4f;
+    private static final float INITIAL_SIDE_TIME = 2.0f;
+    private static final float SCANNING_TIME = 1.0f;
     private static final double CLICKING_FORWARD_TIME = 1.0f;
+    private static final double BACKING_UP_TIME = 0.4f;
 
-    private static final double BACKING_UP_TIME = 0.75f;
+    // Slowdown to a maximum of half-speed.
+    private static final float BEACON_APPROACH_MAX_SLOWDOWN = 1.0f;
+    private static final int BEACON_SLOW_DOWN_MAX = 55;
+    private static final int BEACON_SLOW_DOWN_MIN = 10;
+    private static final int BEACON_DISTANCE_THRESHOLD = 20;
 
-    private static final double TIME_TOWARDS_BALL = 2.75f;
-    private static final double TIME_FROM_BALL = 1.0f;
+    private static final int COLOR_ON_WHITE_THRESHOLD = 17;
 
     private static final int DEFAULT_ANGLE_THRESHOLD = 2;
 
@@ -73,17 +68,9 @@ public class TrumanAutoMode extends OpMode {
         Straightening,
         FindTheWhiteLine,
         ApproachingBeacon,
+        FindWhiteLineAgain,
         ScanningLeft,
-        ApproachingBeaconScanningColor,
-        WaitingForColorChange,
-        WaitingForNewColor,
-        WaitingForChangeFrom,
-        CenteringFromLeft,
         ScanningRight,
-        CenteringFromRight,
-        Picking,
-        GoLeft,
-        GoRight,
         Clicking,
         Backing,
         SlidingToNextBeacon,
@@ -92,10 +79,7 @@ public class TrumanAutoMode extends OpMode {
     }
 
     // Motors and servos
-    DcMotor mFrontRight;
-    DcMotor mFrontLeft;
-    DcMotor mBackRight;
-    DcMotor mBackLeft;
+    TankHardware tank;
 
     DcMotor mRamp;
     DcMotor mPropLeft;
@@ -135,6 +119,14 @@ public class TrumanAutoMode extends OpMode {
 
     boolean turnWithBackOnly;
 
+    float cur_straighten_power;
+    int straighten_threshold;
+
+    float not_moving_add_power;
+    float dist_derive = 0.0f;
+
+    boolean straighteningFoundWhiteLine = false;
+
     GyroSensor gyro;
 
     public TrumanAutoMode(Turn turn, Color color, double delay) {
@@ -145,16 +137,14 @@ public class TrumanAutoMode extends OpMode {
 
     @Override
     public void init() {
-        mFrontRight = hardwareMap.dcMotor.get("front right");
-        mFrontLeft = hardwareMap.dcMotor.get("front left");
-        mBackRight = hardwareMap.dcMotor.get("back right");
-        mBackLeft = hardwareMap.dcMotor.get("back left");
-
-        mBackLeft.setDirection(DcMotor.Direction.REVERSE);
-        mFrontLeft.setDirection(DcMotor.Direction.REVERSE);
+        tank = new TankHardware(hardwareMap);
+        tank.setTelemetry(telemetry);
 
         mPropRight = hardwareMap.dcMotor.get("prop right");
         mPropLeft = hardwareMap.dcMotor.get("prop left");
+
+        mPropLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        mPropRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         sSlide = hardwareMap.servo.get("servo slide");
 
@@ -195,122 +185,6 @@ public class TrumanAutoMode extends OpMode {
         changeState(State.Stopped);
     }
 
-    private void setMotorsForward() {
-        setMotorsForward(MOTOR_POWER);
-    }
-    private void setMotorsForward(float power) {
-        mFrontRight.setPower(power);
-        mBackRight.setPower(power);
-        mFrontLeft.setPower(power);
-        mBackLeft.setPower(power);
-    }
-
-    private void setMotorsBackward() {
-        setMotorsBackward(MOTOR_POWER);
-    }
-    private void setMotorsBackward(float power) {
-        mFrontRight.setPower(-power);
-        mBackRight.setPower(-power);
-        mFrontLeft.setPower(-power);
-        mBackLeft.setPower(-power);
-    }
-    private void setMotorsForwardSlow() {
-        mFrontRight.setPower(SLOW_MOTOR_POWER);
-        mBackRight.setPower(SLOW_MOTOR_POWER);
-        mFrontLeft.setPower(SLOW_MOTOR_POWER);
-        mBackLeft.setPower(SLOW_MOTOR_POWER);
-    }
-
-    private void setMotorsBackwardSlow() {
-        mFrontRight.setPower(-SLOW_MOTOR_POWER);
-        mBackRight.setPower(-SLOW_MOTOR_POWER);
-        mFrontLeft.setPower(-SLOW_MOTOR_POWER);
-        mBackLeft.setPower(-SLOW_MOTOR_POWER);
-    }
-
-    private void setMotorsStopped() {
-        mFrontRight.setPower(0.0f);
-        mBackRight.setPower(0.0f);
-        mFrontLeft.setPower(0.0f);
-        mBackLeft.setPower(0.0f);
-    }
-
-    private void setTurnRight() {
-        mFrontRight.setPower(-MOTOR_POWER);
-        mBackRight.setPower(-MOTOR_POWER);
-        mFrontLeft.setPower(MOTOR_POWER);
-        mBackLeft.setPower(MOTOR_POWER);
-    }
-
-    private void setTurnLeft() {
-        mFrontRight.setPower(MOTOR_POWER);
-        mBackRight.setPower(MOTOR_POWER);
-
-        mFrontLeft.setPower(-MOTOR_POWER);
-        mBackLeft.setPower(-MOTOR_POWER);
-    }
-    private void setTurnRightSlow() {
-        if(!turnWithBackOnly) {
-            mFrontRight.setPower(-SLOW_TURN_POWER);
-            mBackRight.setPower(-SLOW_TURN_POWER);
-            mFrontLeft.setPower(SLOW_TURN_POWER);
-            mBackLeft.setPower(SLOW_TURN_POWER);
-        }
-        else
-        {
-            // Our front right and back right are switched
-            mFrontLeft.setPower(0.0f);
-            mBackRight.setPower(0.0f);
-            mBackLeft.setPower(SLOW_TURN_POWER);
-            mFrontRight.setPower(-SLOW_TURN_POWER);
-        }
-    }
-
-    private void setTurnLeftSlow() {
-        if(!turnWithBackOnly) {
-            mFrontRight.setPower(SLOW_TURN_POWER);
-            mBackRight.setPower(SLOW_TURN_POWER);
-
-            mFrontLeft.setPower(-SLOW_TURN_POWER);
-            mBackLeft.setPower(-SLOW_TURN_POWER);
-        }
-        else
-        {
-            mFrontLeft.setPower(0.0f);
-            mBackRight.setPower(0.0f);
-            mBackLeft.setPower(-SLOW_TURN_POWER);
-            mFrontRight.setPower(SLOW_TURN_POWER);
-        }
-    }
-
-
-    private void setMotorsRight() {
-        setMotorsRight(MOTOR_POWER);
-    }
-    private void setMotorsLeft() {
-        setMotorsLeft(MOTOR_POWER);
-    }
-    private void setMotorsRight(float power) {
-        mFrontRight.setPower(power);
-        mBackRight.setPower(-power);
-
-        mFrontLeft.setPower(power);
-        mBackLeft.setPower(-power);
-    }
-    private void setMotorsLeft(float power) {
-        mFrontRight.setPower(-power);
-        mBackRight.setPower(power);
-
-        mFrontLeft.setPower(-power);
-        mBackLeft.setPower(power);
-    }
-    private void setMotorsRightSlow() {
-        setMotorsRight(SLOW_MOTOR_POWER);
-    }
-    private void setMotorsLeftSlow() {
-        setMotorsLeft(SLOW_MOTOR_POWER);
-    }
-
     private boolean isInAngle(float angle, float begin, float end)
     {
         // Normalize values
@@ -327,7 +201,7 @@ public class TrumanAutoMode extends OpMode {
             return begin < angle && angle < end;
         }
     }
-
+/*
     private void setMotorsForwardChecked(float target_angle) {
         // Figure out direction
         int upper_bound = ((int) target_angle + 178) % 360;
@@ -366,7 +240,7 @@ public class TrumanAutoMode extends OpMode {
         }
 
     }
-
+*/
     public void resetState() {
         sSlide.setPosition(INITIAL_SLIDE_POSITION);
 
@@ -383,6 +257,11 @@ public class TrumanAutoMode extends OpMode {
 
         turnWithBackOnly = false;
         after_clicking = State.Backing;
+
+        cur_straighten_power = FAST_STRAIGHTENING_POWER;
+        straighten_threshold = 4;
+
+        not_moving_add_power = 0.0f;
 
         changeState(State.Calibrating);
     }
@@ -425,9 +304,9 @@ public class TrumanAutoMode extends OpMode {
                 break;
             case InitialForward:
                 telemetry.addData("doing", "initial forward");
-                setMotorsForward(FAST_MOTOR_POWER);
+                tank.setForward(FAST_POWER);
                 if (range.ultraSonic() <= BALL_DISTANCE_THRESHOLD) {
-                    setMotorsStopped();
+                    tank.stop();
                     changeState(State.ShootingFirstBall);
                 }
                 break;
@@ -458,60 +337,64 @@ public class TrumanAutoMode extends OpMode {
             case InitialSide:
                 telemetry.addData("doing", "initial side");
 
-                // Mostly ramp down - let the motors spin for awhile.
-                mPropLeft.setPower(.05f);
-                mPropRight.setPower(.05f);
+                // Ramp down completely - the wheels may spin for some time.
+                mPropLeft.setPower(0.0f);
+                mPropRight.setPower(0.0f);
 
                 if (turning == Turn.Left) {
-                    setMotorsRight();
+                    tank.setRight(FAST_POWER);
                 } else {
-                    setMotorsLeft();
+                    tank.setLeft(FAST_POWER);
                 }
 
                 if (time - time_at_start >= INITIAL_SIDE_TIME) {
-                    setMotorsStopped();
+                    tank.stop();
                     changeState(State.Searching);
                 }
                 break;
             case Searching:
-
-                // Totally ramp down
-                mPropLeft.setPower(0.0f);
-                mPropRight.setPower(0.0f);
-
                 telemetry.addData("doing", "searching");
-                setMotorsForwardSlow();
+                tank.setForward(SEARCH_POWER);
 
                 if (bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD) {
-                    // This state only runs the first time, so make sure that after we scan we go back
-                    // to finding the white line again.
+                    // This state only runs the first time, so make sure that
+                    // after we scan we go back to finding the white line again.
                     after_scan_state = State.SlidingToNextBeacon;
                     after_straighten = State.FindTheWhiteLine;
                     after_clicking = State.Backing;
-                    changeState(State.Straightening);
+                    cur_straighten_power = FAST_STRAIGHTENING_POWER;
+                    straighten_threshold = 5;
+                    stopState(2.0f, State.Straightening);
                 }
                 break;
             case Straightening:
                 telemetry.addData("doing", "straightening");
 
+                if(bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD)
+                {
+                    straighteningFoundWhiteLine = true;
+                }
+
                 if (turning == Turn.Left) {
-                    if (gyro.getHeading() < 90 || gyro.getHeading() > 270) {
-                        setTurnRightSlow();
+                    if(robotIsAtAngle(90, straighten_threshold))
+                    {
+                        stopState(2.0f, after_straighten);
+                    } else if (gyro.getHeading() < 90 || gyro.getHeading() > 270) {
+                        tank.setTurnCW(cur_straighten_power, !turnWithBackOnly,
+                                true);
                     } else if (gyro.getHeading() > 90) {
-                        setTurnLeftSlow();
-                    }
-                    if (robotIsAtAngle(90)) {
-                        changeState(after_straighten);
+                        tank.setTurnCCW(cur_straighten_power, !turnWithBackOnly,
+                                true);
                     }
                 } else if (turning == Turn.Right) {
-                    if (gyro.getHeading() < 90 || gyro.getHeading() > 270) {
-                        setTurnLeftSlow();
+                    if (robotIsAtAngle(270, straighten_threshold)) {
+                        stopState(2.0f, after_straighten);
+                    } else if (gyro.getHeading() < 90 || gyro.getHeading() > 270) {
+                        tank.setTurnCCW(cur_straighten_power, !turnWithBackOnly,
+                                true);
                     } else if (gyro.getHeading() > 90) {
-                        setTurnRightSlow();
-                    }
-
-                    if (robotIsAtAngle(270)) {
-                        changeState(after_straighten);
+                        tank.setTurnCW(cur_straighten_power, !turnWithBackOnly,
+                                true);
                     }
                 }
                 break;
@@ -519,19 +402,23 @@ public class TrumanAutoMode extends OpMode {
                 telemetry.addData("doing", "finding the white line");
 
                 if (turning == Turn.Left) {
-                    setMotorsLeft(FIND_LINE_SIDE_POWER);
+                    tank.setLeft(FIND_WHITE_LINE_POWER);
                 } else {
-                    setMotorsRight(FIND_LINE_SIDE_POWER);
+                    tank.setRight(FIND_WHITE_LINE_POWER);
                 }
 
                 if (bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD) {
                     // We found the white line
-                    setMotorsStopped();
-                    // If we haven't straightened like this do this
-                    after_straighten = State.ApproachingBeacon;
-                    after_approaching = State.ScanningLeft;
+                    tank.stop();
+
+                    // Approach the beacon
                     turnWithBackOnly = true;
-                    changeState(State.Straightening);
+                    cur_straighten_power = SLOW_STRAIGHTENING_POWER;
+                    straighten_threshold = 2;
+                    straighteningFoundWhiteLine = false;
+                    stopState(2.0f, State.Straightening);
+                    after_straighten = State.ApproachingBeacon;
+                    after_approaching = State.FindWhiteLineAgain;
                 }
                 break;
             case ApproachingBeacon:
@@ -542,77 +429,101 @@ public class TrumanAutoMode extends OpMode {
                 // period.
 
                 telemetry.addData("doing", "approaching beacon");
-                setMotorsForwardSlow();
+
+                float approach_power = APPROACH_POWER;
+
+                int divisor =
+                        BEACON_SLOW_DOWN_MAX - BEACON_SLOW_DOWN_MIN;
+
+                float dif = range.ultraSonic() - BEACON_SLOW_DOWN_MIN;
+                // Distance is how far we are to the destination distance
+                // in the range [0.0, 1.0] where 1.0 is farthest and 0.0f is
+                // closest.
+                float dist = Range.clip(dif / (float) divisor, 0.0f, 1.0f);
+
+                float slowdown_fac = 1.0f - dist;
+                approach_power -=
+                        approach_power * slowdown_fac * BEACON_APPROACH_MAX_SLOWDOWN;
+                telemetry.addData("dist", dist);
+
+                approach_power += not_moving_add_power;
+
+                tank.setForward(approach_power);
                 if (range.ultraSonic() <= BEACON_DISTANCE_THRESHOLD) {
-                    setMotorsStopped();
-                    changeState(after_approaching);
+                    tank.stop();
+                    stopState(2.0f, after_approaching);
                 }
                 break;
+            case FindWhiteLineAgain:
+                telemetry.addData("doing", "finding white line again");
+
+                // If we found the white line during the straightening move
+                // sideways until we find the white line
+                if((straighteningFoundWhiteLine && turning == Turn.Left) ||
+                        (!straighteningFoundWhiteLine && turning == Turn.Right))
+                {
+                    // Move left until we find the white
+                    tank.setLeft(SCAN_POWER);
+                }
+                else if((straighteningFoundWhiteLine && turning == Turn.Right) ||
+                        (!straighteningFoundWhiteLine && turning == Turn.Left))
+                {
+                    // Move right until we find the white line, or after a
+                    // period of time, no color.
+                    tank.setRight(SCAN_POWER);
+                }
+
+                if(bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD)
+                {
+                    // Move on to scanning.
+                    stopState(2.0f, State.ScanningLeft);
+                }
             case ScanningLeft:
                 telemetry.addData("doing", "scanning left");
+
+                tank.setLeft(SCAN_POWER);
 
                 // Try to guess this color!
                 leftSideGuess = guessFrontColor();
 
-                setMotorsLeftSlow();
-                if (time - time_at_start >= 1.0f && leftSideGuess == null) {
-                    setMotorsStopped();
-                    // Start approaching the beacon if we still can't find anything
-                    changeState(State.ApproachingBeaconScanningColor);
-                    break;
-                } else if (time - time_at_start >= .5f && leftSideGuess != null) {
-                    if (leftSideGuess == seekColor) {
-                        changeState(State.Clicking);
-                    } else {
-                        // Move to the right
-                        setMotorsStopped();
-                        waitingForChangeFrom = leftSideGuess;
-                        changeState(State.ScanningRight);
-                    }
+                if(leftSideGuess == seekColor)
+                {
+                    // Click!
+                    tank.stop();
+                    changeState(State.Clicking);
                 }
-                break;
-            case ApproachingBeaconScanningColor:
-                telemetry.addData("doing", "approaching beacon scanning color");
-
-                if (leftSideGuess == null) {
-                    // Guess the front color.
-                    leftSideGuess = guessFrontColor();
-                }
-
-                setMotorsForwardSlow();
-                if (range.ultraSonic() <= BEACON_DISTANCE_CLOSER_THRESHOLD && leftSideGuess == null) {
-                    setMotorsStopped();
+                else if(leftSideGuess != null ||
+                        time - time_at_start >= SCANNING_TIME)
+                {
+                    // Get outta here and scan right
+                    tank.stop();
                     waitingForChangeFrom = leftSideGuess;
                     changeState(State.ScanningRight);
-                } else if (leftSideGuess == seekColor) {
-                    changeState(State.Clicking);
                 }
                 break;
             case ScanningRight:
-                telemetry.addData("doing", "waiting for color change");
-                setMotorsRight();
+                telemetry.addData("doing", "scanning right");
+
+                tank.setRight(SCAN_POWER);
+
                 rightSideGuess = guessFrontColor();
-                if (rightSideGuess != null && rightSideGuess != waitingForChangeFrom) {
-                    // We found a color
-                    if (rightSideGuess == seekColor)
-                    {
-                        changeState(State.Clicking);
-                    }
-                    else
-                    {
-                        // Shit, we can't click it, try scanning again
-                        changeState(after_scan_state);
-                    }
-                }
-                else if(time - time_at_start >= 1.0f)
+
+                if(rightSideGuess == seekColor)
                 {
+                    tank.stop();
+                    changeState(State.Clicking);
+                }
+                else if(time - time_at_start >= SCANNING_TIME)
+                {
+                    // Don't click, just try the next beacon if applicable.
+                    tank.stop();
                     changeState(after_scan_state);
                 }
                 break;
             case Clicking:
                 telemetry.addData("doing", "clicking");
 
-                setMotorsForward();
+                tank.setForward(CLICK_POWER);
 
                 if (time - time_at_start >= CLICKING_FORWARD_TIME) {
                     changeState(after_clicking);
@@ -621,11 +532,11 @@ public class TrumanAutoMode extends OpMode {
             case Backing:
                 telemetry.addData("doing", "backing");
 
-                setMotorsBackward();
+                tank.setBackward(CLICK_POWER);
 
                 if (time - time_at_start >= BACKING_UP_TIME) {
                     changeState(after_scan_state);
-                    setMotorsStopped();
+                    tank.stop();
                 }
                 break;
             case SlidingToNextBeacon:
@@ -634,11 +545,11 @@ public class TrumanAutoMode extends OpMode {
                 // state.
                 if(turning == Turn.Left)
                 {
-                    setMotorsLeft();
+                    tank.setLeft(FAST_POWER);
                 }
                 else
                 {
-                    setMotorsRight();
+                    tank.setRight(FAST_POWER);
                 }
                 // Well, we have to make sure we get off the white line first
                 if(time - time_at_start >= TIME_SLIDING_TO_NEXT_BEACON) {
@@ -652,7 +563,7 @@ public class TrumanAutoMode extends OpMode {
             case Stopped:
                 if (time - time_at_start <= time_to_stop)
                 {
-                    setMotorsStopped();
+                    tank.stop();
                 }
                 else
                 {
@@ -662,7 +573,7 @@ public class TrumanAutoMode extends OpMode {
             case Done:
             default:
                 telemetry.addData("doing", "done");
-                setMotorsStopped();
+                tank.stop();
                 break;
         }
         telemetry.addData("front color", frontColor.alpha());
@@ -694,6 +605,8 @@ public class TrumanAutoMode extends OpMode {
         {
             telemetry.addData("curColorGuess", "null");
         }
+
+        tank.logPower();
     }
 
     private Color guessFrontColor() {
