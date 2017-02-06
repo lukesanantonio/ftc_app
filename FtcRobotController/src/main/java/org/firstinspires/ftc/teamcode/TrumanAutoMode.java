@@ -178,69 +178,65 @@ public class TrumanAutoMode extends OpMode {
         state = new_state;
     }
 
-    private void stopState(double time, State next)
-    {
+    private void stopState(double time, State next) {
         time_to_stop = time;
         next_state = next;
         changeState(State.Stopped);
     }
 
-    private boolean isInAngle(float angle, float begin, float end)
-    {
+    private boolean isInAngle(float angle, float begin, float end) {
         // Normalize values
         begin = begin % 360.0f;
         end = end % 360.0f;
         angle = angle % 360.0f;
 
-        if (end < begin)
-        {
+        if (end < begin) {
             return angle < end || begin < angle;
-        }
-        else
-        {
+        } else {
             return begin < angle && angle < end;
         }
     }
-/*
-    private void setMotorsForwardChecked(float target_angle) {
-        // Figure out direction
-        int upper_bound = ((int) target_angle + 178) % 360;
-        int lower_bound = ((int) target_angle - 178) % 360;
 
-        float current_gyro = gyro.getHeading();
+    /*
+        private void setMotorsForwardChecked(float target_angle) {
+            // Figure out direction
+            int upper_bound = ((int) target_angle + 178) % 360;
+            int lower_bound = ((int) target_angle - 178) % 360;
 
-        float turning_factor = Math.abs(current_gyro - target_angle) * TURNING_CONSTANT;
+            float current_gyro = gyro.getHeading();
 
-        telemetry.addData("Turning factor", turning_factor);
+            float turning_factor = Math.abs(current_gyro - target_angle) * TURNING_CONSTANT;
 
-        if (isInAngle(current_gyro, lower_bound, target_angle))
-        {
-            // If the gyro is between target and lower add some power to the left.
-            // Add power to the right
-            mFrontRight.setPower(SLOW_MOTOR_POWER + turning_factor);
-            mBackRight.setPower(SLOW_MOTOR_POWER + turning_factor);
-            mFrontLeft.setPower(SLOW_MOTOR_POWER);
-            mBackLeft.setPower(SLOW_MOTOR_POWER);
+            telemetry.addData("Turning factor", turning_factor);
 
-            telemetry.addData("turning factor direction", "left");
+            if (isInAngle(current_gyro, lower_bound, target_angle))
+            {
+                // If the gyro is between target and lower add some power to the left.
+                // Add power to the right
+                mFrontRight.setPower(SLOW_MOTOR_POWER + turning_factor);
+                mBackRight.setPower(SLOW_MOTOR_POWER + turning_factor);
+                mFrontLeft.setPower(SLOW_MOTOR_POWER);
+                mBackLeft.setPower(SLOW_MOTOR_POWER);
+
+                telemetry.addData("turning factor direction", "left");
+            }
+            else if(isInAngle(current_gyro, target_angle, upper_bound))
+            {
+                // Add power to the left
+                mFrontRight.setPower(SLOW_MOTOR_POWER);
+                mBackRight.setPower(SLOW_MOTOR_POWER);
+                mFrontLeft.setPower(SLOW_MOTOR_POWER + turning_factor);
+                mBackLeft.setPower(SLOW_MOTOR_POWER + turning_factor);
+
+                telemetry.addData("turning factor direction", "right");
+            }
+            else
+            {
+                setTurnRight();
+            }
+
         }
-        else if(isInAngle(current_gyro, target_angle, upper_bound))
-        {
-            // Add power to the left
-            mFrontRight.setPower(SLOW_MOTOR_POWER);
-            mBackRight.setPower(SLOW_MOTOR_POWER);
-            mFrontLeft.setPower(SLOW_MOTOR_POWER + turning_factor);
-            mBackLeft.setPower(SLOW_MOTOR_POWER + turning_factor);
-
-            telemetry.addData("turning factor direction", "right");
-        }
-        else
-        {
-            setTurnRight();
-        }
-
-    }
-*/
+    */
     public void resetState() {
         sSlide.setPosition(INITIAL_SLIDE_POSITION);
 
@@ -370,14 +366,12 @@ public class TrumanAutoMode extends OpMode {
             case Straightening:
                 telemetry.addData("doing", "straightening");
 
-                if(bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD)
-                {
+                if (bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD) {
                     straighteningFoundWhiteLine = true;
                 }
 
                 if (turning == Turn.Left) {
-                    if(robotIsAtAngle(90, straighten_threshold))
-                    {
+                    if (robotIsAtAngle(90, straighten_threshold)) {
                         stopState(2.0f, after_straighten);
                     } else if (gyro.getHeading() < 90 || gyro.getHeading() > 270) {
                         tank.setTurnCW(cur_straighten_power, !turnWithBackOnly,
@@ -459,22 +453,18 @@ public class TrumanAutoMode extends OpMode {
 
                 // If we found the white line during the straightening move
                 // sideways until we find the white line
-                if((straighteningFoundWhiteLine && turning == Turn.Left) ||
-                        (!straighteningFoundWhiteLine && turning == Turn.Right))
-                {
+                if ((straighteningFoundWhiteLine && turning == Turn.Left) ||
+                        (!straighteningFoundWhiteLine && turning == Turn.Right)) {
                     // Move left until we find the white
                     tank.setLeft(SCAN_POWER);
-                }
-                else if((straighteningFoundWhiteLine && turning == Turn.Right) ||
-                        (!straighteningFoundWhiteLine && turning == Turn.Left))
-                {
+                } else if ((straighteningFoundWhiteLine && turning == Turn.Right) ||
+                        (!straighteningFoundWhiteLine && turning == Turn.Left)) {
                     // Move right until we find the white line, or after a
                     // period of time, no color.
                     tank.setRight(SCAN_POWER);
                 }
 
-                if(bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD)
-                {
+                if (bottomColor.alpha() >= COLOR_ON_WHITE_THRESHOLD) {
                     // Move on to scanning.
                     stopState(2.0f, State.ScanningLeft);
                 }
@@ -486,15 +476,12 @@ public class TrumanAutoMode extends OpMode {
                 // Try to guess this color!
                 leftSideGuess = guessFrontColor();
 
-                if(leftSideGuess == seekColor)
-                {
+                if (leftSideGuess == seekColor) {
                     // Click!
                     tank.stop();
                     changeState(State.Clicking);
-                }
-                else if(leftSideGuess != null ||
-                        time - time_at_start >= SCANNING_TIME)
-                {
+                } else if (leftSideGuess != null ||
+                        time - time_at_start >= SCANNING_TIME) {
                     // Get outta here and scan right
                     tank.stop();
                     waitingForChangeFrom = leftSideGuess;
@@ -508,13 +495,10 @@ public class TrumanAutoMode extends OpMode {
 
                 rightSideGuess = guessFrontColor();
 
-                if(rightSideGuess == seekColor)
-                {
+                if (rightSideGuess == seekColor) {
                     tank.stop();
                     changeState(State.Clicking);
-                }
-                else if(time - time_at_start >= SCANNING_TIME)
-                {
+                } else if (time - time_at_start >= SCANNING_TIME) {
                     // Don't click, just try the next beacon if applicable.
                     tank.stop();
                     changeState(after_scan_state);
@@ -543,16 +527,13 @@ public class TrumanAutoMode extends OpMode {
                 telemetry.addData("doing", "sliding to next beacon");
                 // This state just sets up find the white line mode to finish by going into the done
                 // state.
-                if(turning == Turn.Left)
-                {
+                if (turning == Turn.Left) {
                     tank.setLeft(FAST_POWER);
-                }
-                else
-                {
+                } else {
                     tank.setRight(FAST_POWER);
                 }
                 // Well, we have to make sure we get off the white line first
-                if(time - time_at_start >= TIME_SLIDING_TO_NEXT_BEACON) {
+                if (time - time_at_start >= TIME_SLIDING_TO_NEXT_BEACON) {
                     // Partially reset state
                     turnWithBackOnly = false;
                     after_scan_state = State.Done;
@@ -561,12 +542,9 @@ public class TrumanAutoMode extends OpMode {
                 }
                 break;
             case Stopped:
-                if (time - time_at_start <= time_to_stop)
-                {
+                if (time - time_at_start <= time_to_stop) {
                     tank.stop();
-                }
-                else
-                {
+                } else {
                     changeState(next_state);
                 }
                 break;
@@ -584,25 +562,21 @@ public class TrumanAutoMode extends OpMode {
         telemetry.addData("time_at_start", time_at_start);
         telemetry.addData("gyro heading", gyro.getHeading());
         telemetry.addData("time", time);
-        if(leftSideGuess != null) {
+        if (leftSideGuess != null) {
             telemetry.addData("leftSideGuess", leftSideGuess.toString());
-        } else
-        {
+        } else {
             telemetry.addData("leftSideGuess", "null");
         }
-        if(rightSideGuess != null) {
+        if (rightSideGuess != null) {
             telemetry.addData("rightSideGuess", rightSideGuess.toString());
-        }
-        else
-        {
+        } else {
             telemetry.addData("rightSideGuess", "null");
         }
 
         Color frontColor = guessFrontColor();
-        if(frontColor != null) {
+        if (frontColor != null) {
             telemetry.addData("curColorGuess", frontColor.toString());
-        } else
-        {
+        } else {
             telemetry.addData("curColorGuess", "null");
         }
 
@@ -611,16 +585,14 @@ public class TrumanAutoMode extends OpMode {
 
     private Color guessFrontColor() {
         float red_blue_ratio = frontColor.red() / (float) frontColor.blue();
-        if(frontColor.blue() == 0)
-        {
+        if (frontColor.blue() == 0) {
             red_blue_ratio = frontColor.red();
         }
         if (red_blue_ratio >= 4.0f) {
             return Color.Red;
         }
         float blue_red_ratio = frontColor.blue() / (float) frontColor.red();
-        if (blue_red_ratio == 0)
-        {
+        if (blue_red_ratio == 0) {
             blue_red_ratio = frontColor.blue();
         }
         if (blue_red_ratio >= 4.0f) {
@@ -632,10 +604,10 @@ public class TrumanAutoMode extends OpMode {
         return null;
     }
 
-    public boolean robotIsAtAngle(int angle)
-    {
+    public boolean robotIsAtAngle(int angle) {
         return robotIsAtAngle(angle, DEFAULT_ANGLE_THRESHOLD);
     }
+
     public boolean robotIsAtAngle(int angle, int threshold) {
         // Find the upper and the lower bound
         int upper = angle + Math.abs(threshold);
