@@ -269,7 +269,7 @@ public class TrumanOriginalAutoMode extends OpMode {
         telemetry.addData("color", frontColor.alpha());
         telemetry.addData("optical distance", range.optical());
         telemetry.addData("range distance", range.ultraSonic());
-        telemetry.addData("time_at_start", time_at_start);
+        telemetry.addData("timeAtStart", time_at_start);
         telemetry.addData("time", time);
     }
 }

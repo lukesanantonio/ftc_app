@@ -82,10 +82,10 @@ public class FtcOpModeRegister implements OpModeRegister {
          * Any manual OpMode class registrations should go here.
          */
         manager.register("T-Auto (Right,Red,0 Delay)", new TrumanAutoMode(
-                TrumanAutoMode.Turn.Right, TrumanAutoMode.Color.Red, 0.0f
+                TrumanAutoMode.Color.Red, 0.0f
         ));
         manager.register("T-Auto (Left,,Blue,0 Delay)", new TrumanAutoMode(
-                TrumanAutoMode.Turn.Left, TrumanAutoMode.Color.Blue, 0.0f
+                TrumanAutoMode.Color.Blue, 0.0f
         ));
 
     }

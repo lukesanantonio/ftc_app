@@ -237,7 +237,7 @@ public class AndrewAutoMode extends OpMode {
                 break;
         }
         telemetry.addData("color", frontColor.alpha());
-        telemetry.addData("time_at_start", time_at_start);
+        telemetry.addData("timeAtStart", time_at_start);
         telemetry.addData("time", time);
     }
 

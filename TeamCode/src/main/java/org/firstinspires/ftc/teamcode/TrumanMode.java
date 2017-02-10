@@ -34,9 +34,9 @@ public class TrumanMode extends OpMode {
         tank.setTelemetry(telemetry);
 
         //mRamp = hardwareMap.dcMotor.get("ramp");
-        mPropRight = hardwareMap.dcMotor.get("prop right");
-        mPropLeft = hardwareMap.dcMotor.get("prop left");
-        sSlide = hardwareMap.servo.get("servo slide");
+        //mPropRight = hardwareMap.dcMotor.get("prop right");
+        //mPropLeft = hardwareMap.dcMotor.get("prop left");
+        //sSlide = hardwareMap.servo.get("servo slide");
 
         // Rogue Motor
         //mMotor = hardwareMap.dcMotor.get("motor");
@@ -56,8 +56,8 @@ public class TrumanMode extends OpMode {
         }
         propPower = Range.clip(propPower, 0.0f, 1.0f);
 
-        mPropLeft.setPower(propPower);
-        mPropRight.setPower(propPower);
+        //mPropLeft.setPower(propPower);
+        //mPropRight.setPower(propPower);
 
         float leftstep = gamepad1.left_trigger - gamepad1.right_trigger;
         if (Math.abs(leftstep) > 0.0f)
@@ -73,8 +73,8 @@ public class TrumanMode extends OpMode {
 
         slidePosition += gamepad2.left_stick_y / 50.0f;
         slidePosition = Range.clip(slidePosition, SERVO_BOTTOM, SERVO_TOP);
-        sSlide.setPosition(slidePosition);
-        telemetry.addData("sSlide power", sSlide.getPosition());
+        //sSlide.setPosition(slidePosition);
+        //telemetry.addData("sSlide power", sSlide.getPosition());
         // top .77
         // bottom .44
         telemetry.addData("gamepad2 left_stick_y", gamepad2.left_stick_y);
