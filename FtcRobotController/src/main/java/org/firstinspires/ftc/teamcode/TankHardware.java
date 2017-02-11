@@ -23,10 +23,10 @@ public class TankHardware {
         backRightMotor = hardwareMap.dcMotor.get("back right");
 
         frontLeftMotor.setDirection(DcMotorSimple.Direction.FORWARD);
-        backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        backLeftMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         frontRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        backRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     public void logPower()
@@ -111,19 +111,19 @@ public class TankHardware {
 
     public void setLeft(float power)
     {
-        frontLeftMotor.setPower(-power);
-        backLeftMotor.setPower(power);
+        frontLeftMotor.setPower(power);
+        backLeftMotor.setPower(-power * 1.0f);
 
-        frontRightMotor.setPower(power);
-        backRightMotor.setPower(-power);
+        frontRightMotor.setPower(-power);
+        backRightMotor.setPower(power * 1.0f);
     }
     public void setRight(float power)
     {
-        frontLeftMotor.setPower(power);
-        backLeftMotor.setPower(-power);
+        frontLeftMotor.setPower(-power);
+        backLeftMotor.setPower(power * 1.0f);
 
-        frontRightMotor.setPower(-power);
-        backRightMotor.setPower(power);
+        frontRightMotor.setPower(power);
+        backRightMotor.setPower(-power * 1.0f);
     }
 
     public void stop()

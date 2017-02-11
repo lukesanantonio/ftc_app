@@ -1,8 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -18,29 +20,36 @@ public class TrumanAutoMode extends OpMode {
     private static final float CLICK_POWER = 1.0f;
     private static final float APPROACH_POWER = 1.0f;
     private static final float FAST_POWER = 1.0f;
-    private static final float MIN_TURN_POWER = .1f;
-    private static final float MIN_APPROACH_POWER = .1f;
+    private static final float MIN_TURN_POWER = .43f;
+    private static final float MIN_APPROACH_POWER = .18f;
+
+    private static final float PROP_POWER_LOW_BATTERY = .30f;
+    private static final float PROP_POWER_MUCH_BATTERY = .25f;
 
     // == Thresholds
-    private static final int ANGLE_THRESHOLD = 4;
+    private static final int ANGLE_THRESHOLD = 6;
     private static final int DISTANCE_THRESHOLD = 2;
 
     // == Distances
     private static final int BALL_DISTANCE = 26;
     private static final int WALL_DISTANCE = 11;
+    private static final int BALL_CLOSER_DISTANCE = 17;
+    private static final int WALL_TURNING_DISTANCE = 25;
 
     // Accept clicking from 10-4.
     private static final int CLICK_DISTANCE_THRESHOLD = 2;
-    private static final int CLICK_DISTANCE = 5;
+    private static final int CLICK_DISTANCE = 4;
 
     // == Timers
-    private static final float SHOOTING_DELAY = 1.3f;
-    private static final float SECOND_SHOOTING_DELAY = 1.5f;
-    private static final double INITIAL_SIDE_TIME = 1.5f;
+    private static final float SHOOTING_DELAY = 3.5f;
+    private static final double INITIAL_SIDE_TIME = 2.0f;
+    private static final double SMALL_FORWARD_TIME = 0.55f;
     private static final double MAX_SCAN_TIME = 20.0f;
-    private static final double IGNORING_TIME = 4.0f;
+    private static final double IGNORING_TIME = 2.00f;
+    private static final double HIT_BALL_TIME = 2.25f;
 
     // == Servo constants
+    private static final float SLIDE_POWER = 1.0f;
     private static final float INITIAL_SLIDE_POSITION = .3f;
     private static final float FIRST_BALL_POSITION = .44f;
     private static final float SECOND_BALL_POSITION = .70f;
@@ -56,11 +65,14 @@ public class TrumanAutoMode extends OpMode {
         Calibrating,
         Start,
         InitialForward,
-        ShootingFirstBall,
-        ShootingSecondBall,
+        ShootingBall,
+        ApproachBall,
         InitialSide,
+        SmallForward,
         Slide,
         Click,
+        TurnToBall,
+        HitBall,
         Stopped,
         Done
     }
@@ -72,7 +84,7 @@ public class TrumanAutoMode extends OpMode {
     DcMotor mPropLeft;
     DcMotor mPropRight;
 
-    Servo sSlide;
+    CRServo sSlide;
 
     // Miscellaneous Hardware
     ColorSensor frontColor;
@@ -82,12 +94,14 @@ public class TrumanAutoMode extends OpMode {
     // Init state
     Color seekColor = Color.Red;
     double timeDelay;
+    boolean ball;
 
     // State
     State state;
     double timeAtStart;
     double timeToMove;
     double timeToScan;
+    double startTime;
 
     double lastSeenTime;
     int beaconCount;
@@ -99,8 +113,9 @@ public class TrumanAutoMode extends OpMode {
 
     GyroSensor gyro;
 
-    public TrumanAutoMode(Color color, double delay) {
+    public TrumanAutoMode(Color color, boolean doBall, double delay) {
         seekColor = color;
+        ball = doBall;
         timeDelay = delay;
     }
 
@@ -115,7 +130,9 @@ public class TrumanAutoMode extends OpMode {
         mPropLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         mPropRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-        sSlide = hardwareMap.servo.get("servo slide");
+        mPropRight.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        sSlide = hardwareMap.crservo.get("slide");
 
         frontColor = hardwareMap.colorSensor.get("front");
         frontColor.setI2cAddress(I2cAddr.create8bit(0x2c));
@@ -154,11 +171,15 @@ public class TrumanAutoMode extends OpMode {
         return isInAngle(test_angle, angle - threshold, angle + threshold);
     }
 
-    private boolean isInAngle(float angle, float begin, float end) {
+    private static float floorMod(float a, float b) {
+        return (a % b + b) % b;
+    }
+
+    private static boolean isInAngle(float angle, float begin, float end) {
         // Normalize values
-        begin = begin % 360.0f;
-        end = end % 360.0f;
-        angle = angle % 360.0f;
+        begin = floorMod(begin, 360.0f);
+        end = floorMod(end, 360.0f);
+        angle = floorMod(angle, 360.0f);
 
         if (end < begin) {
             return angle < end || begin < angle;
@@ -172,8 +193,6 @@ public class TrumanAutoMode extends OpMode {
     }
 
     public void resetState() {
-        sSlide.setPosition(INITIAL_SLIDE_POSITION);
-
         timeAtStart = 0.0f;
         timeToMove = 0.0f;
         timeToScan = 0.0f;
@@ -186,6 +205,8 @@ public class TrumanAutoMode extends OpMode {
         beaconCount = 0;
         lastSeenTime = 0.0f;
 
+        startTime = time;
+
         changeState(State.Calibrating);
     }
 
@@ -195,8 +216,7 @@ public class TrumanAutoMode extends OpMode {
     }
 
     private boolean turnToAngle(int target_angle, int current_angle,
-                                int threshold, float min_power)
-    {
+                                int threshold, float min_power) {
         return turnToAngle(target_angle, current_angle, threshold, min_power,
                 true, true);
     }
@@ -297,31 +317,26 @@ public class TrumanAutoMode extends OpMode {
     @Override
     public void loop() {
 
+        // Don't go over 30 seconds.
+        if (time - startTime >= 30.0f) {
+            //changeState(State.Done);
+        }
+
         range.updateCache();
 
         switch (state) {
             case Calibrating:
                 telemetry.addData("doing", "calibrating");
 
-                // Ramp up the props
-                mPropLeft.setPower(.3f);
-                mPropRight.setPower(.3f);
-
                 if (!gyro.isCalibrating()) {
-
-                    // Second ramp up step
-                    mPropLeft.setPower(.6f);
-                    mPropRight.setPower(.6f);
-
                     changeState(State.Start);
                 }
                 break;
             case Start:
                 telemetry.addData("doing", "starting");
 
-                // Finish the ramp up
-                mPropLeft.setPower(.87f);
-                mPropRight.setPower(.87f);
+                mPropRight.setPower(PROP_POWER_MUCH_BATTERY);
+                mPropLeft.setPower(PROP_POWER_MUCH_BATTERY - .05f);
 
                 if (time >= timeDelay) {
                     changeState(State.InitialForward);
@@ -333,31 +348,27 @@ public class TrumanAutoMode extends OpMode {
                 tank.setForward(FAST_POWER);
                 if (range.ultraSonic() <= BALL_DISTANCE) {
                     tank.stop();
-                    changeState(State.ShootingFirstBall);
+                    changeState(State.ShootingBall);
                 }
                 break;
-            case ShootingFirstBall:
+            case ShootingBall:
                 telemetry.addData("doing", "shooting first ball");
 
-                // The prop wheels should be at the right speed
-                sSlide.setPosition(FIRST_BALL_POSITION);
+                sSlide.setPower(SLIDE_POWER);
                 if (time - timeAtStart >= SHOOTING_DELAY) {
                     // Move on after the delay
-                    changeState(State.ShootingSecondBall);
-                }
-                break;
-            case ShootingSecondBall:
-                telemetry.addData("doing", "shooting second ball");
-
-                // The prop wheels should be at the right speed
-                sSlide.setPosition(SECOND_BALL_POSITION);
-                if (time - timeAtStart >= SECOND_SHOOTING_DELAY) {
-                    // Move on after the delay
-                    changeState(State.InitialSide);
-
-                    // Start ramping down the props
                     mPropLeft.setPower(0.0f);
                     mPropRight.setPower(0.0f);
+
+                    changeState(State.ApproachBall);
+                }
+                break;
+            case ApproachBall:
+                telemetry.addData("doing", "hit ball");
+                tank.setForward(FAST_POWER);
+                if (range.ultraSonic() <= BALL_CLOSER_DISTANCE) {
+                    tank.stop();
+                    changeState(State.InitialSide);
                 }
                 break;
             case InitialSide:
@@ -371,43 +382,58 @@ public class TrumanAutoMode extends OpMode {
 
                 if (time - timeAtStart >= INITIAL_SIDE_TIME) {
                     useFrontWheels = false;
+                    changeState(State.SmallForward);
+                }
+                break;
+            case SmallForward:
+                telemetry.addData("doing", "small forward");
+
+                tank.setForward(FAST_POWER);
+                if (time - timeAtStart >= SMALL_FORWARD_TIME) {
+                    tank.stop();
                     changeState(State.Slide);
                 }
                 break;
             case Slide:
                 telemetry.addData("doing", "slide");
 
-                if (time - timeAtStart >= MAX_SCAN_TIME) {
-                    changeState(State.Done);
-                    break;
-                }
-
                 int angle = 85;
                 if (seekColor == Color.Red) angle = 275;
 
-                float minPower = .1f;
-                if(useFrontWheels) {
-                    minPower = .5f;
-                }
+                boolean isIgnoring = time - lastSeenTime <= IGNORING_TIME;
 
-                if (!turnToAngle(angle, gyro.getHeading(), ANGLE_THRESHOLD,
-                        minPower,
-                        useFrontWheels, true)) {
-                    // If aren't straight enough, stop here
-                    break;
-                }
+                if (!isIgnoring) {
+                    // Don't use only the back wheels if we went for the ball
 
-                useFrontWheels = true;
+                    float minPower = MIN_TURN_POWER;
+                    if (!useFrontWheels) {
+                        minPower = 1.0f;
+                    }
 
-                if (!approachWall(WALL_DISTANCE)) {
-                    // If we aren't close enough, stop here
-                    break;
+                    if (!turnToAngle(angle, gyro.getHeading(), ANGLE_THRESHOLD,
+                            minPower,
+                            useFrontWheels, true)) {
+                        // If aren't straight enough, stop here
+                        break;
+                    }
+
+                    if (useFrontWheels == false) {
+                        tank.setLeft(1.0f);
+                        tank.stop();
+                    }
+
+                    useFrontWheels = true;
+
+                    if (!approachWall(WALL_DISTANCE)) {
+                        // If we aren't close enough, stop here
+                        break;
+                    }
                 }
 
                 // If we already found the beacons and we are all set up just
                 // stop.
                 if (beaconCount >= 2) {
-                    changeState(State.Done);
+                    changeState(State.TurnToBall);
                     break;
                 }
 
@@ -419,8 +445,7 @@ public class TrumanAutoMode extends OpMode {
                 }
 
                 // Guess the color in front.
-                if (guessFrontColor() == seekColor &&
-                        time - lastSeenTime >= IGNORING_TIME) {
+                if (guessFrontColor() == seekColor && !isIgnoring) {
                     changeState(State.Click);
                     tank.stop();
                     break;
@@ -433,6 +458,28 @@ public class TrumanAutoMode extends OpMode {
                     changeState(State.Slide);
                     ++beaconCount;
                     lastSeenTime = time;
+                }
+                break;
+            case TurnToBall:
+                int ballAngle = 35;
+                if (seekColor == Color.Red) {
+                    ballAngle = 325;
+                }
+
+                if (!approachWall(WALL_TURNING_DISTANCE))
+                {
+                    break;
+                }
+
+                if (turnToAngle(ballAngle, gyro.getHeading(), ANGLE_THRESHOLD,
+                        .6f)) {
+                    changeState(State.HitBall);
+                }
+                break;
+            case HitBall:
+                tank.setBackward(FAST_POWER);
+                if (time - timeAtStart >= HIT_BALL_TIME) {
+                    changeState(State.Done);
                 }
                 break;
             case Stopped:
@@ -473,14 +520,16 @@ public class TrumanAutoMode extends OpMode {
         if (frontColor.blue() == 0) {
             red_blue_ratio = frontColor.red();
         }
-        if (red_blue_ratio >= 4.0f) {
+        if (red_blue_ratio >= 1.5f ||
+                (frontColor.blue() == 0 && frontColor.red() >= 2)) {
             return Color.Red;
         }
         float blue_red_ratio = frontColor.blue() / (float) frontColor.red();
-        if (blue_red_ratio == 0) {
+        if (frontColor.red() == 0) {
             blue_red_ratio = frontColor.blue();
         }
-        if (blue_red_ratio >= 4.0f) {
+        if (blue_red_ratio >= 1.5f ||
+                (frontColor.red() == 0 && frontColor.blue() >= 2)) {
             return Color.Blue;
         }
 

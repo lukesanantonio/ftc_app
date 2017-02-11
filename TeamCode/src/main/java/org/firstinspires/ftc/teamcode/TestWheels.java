@@ -32,10 +32,10 @@ public class TestWheels extends OpMode {
         mBackRight = hardwareMap.dcMotor.get("back right");
 
         mFrontLeft.setDirection(DcMotorSimple.Direction.FORWARD);
-        mBackLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        mBackLeft.setDirection(DcMotorSimple.Direction.FORWARD);
 
         mFrontRight.setDirection(DcMotorSimple.Direction.REVERSE);
-        mBackRight.setDirection(DcMotorSimple.Direction.FORWARD);
+        mBackRight.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     @Override
